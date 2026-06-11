@@ -1,0 +1,23 @@
+{
+  "name": "openwork-cli-root",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenWork CLI — ok-cli monorepo",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "check": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "bun run --cwd apps/cli src/index.ts",
+    "ok": "bun run apps/cli/src/index.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/bun": "latest",
+    "typescript": "^5.8.2"
+  }
+}
