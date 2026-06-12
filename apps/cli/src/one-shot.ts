@@ -12,6 +12,7 @@ interface OneShotOptions {
   model: string
   provider: string
   apiKey?: string
+  baseUrl?: string
 }
 
 export async function runOneShot(opts: OneShotOptions): Promise<void> {
@@ -20,9 +21,10 @@ export async function runOneShot(opts: OneShotOptions): Promise<void> {
   const { agent } = createSession(
     {
       model: {
-        provider: opts.provider as "anthropic" | "openai" | "google" | "mistral" | "bedrock",
+        provider: opts.provider as import("@openwork/core").Provider,
         model: opts.model,
         apiKey: opts.apiKey,
+        baseUrl: opts.baseUrl,
       },
       cwd: process.cwd(),
     },

@@ -2,7 +2,16 @@
  * Core types for OpenWork agent sessions.
  */
 
-export type Provider = "anthropic" | "openai" | "google" | "mistral" | "bedrock"
+export type Provider =
+  | "anthropic"
+  | "openai"
+  | "google"
+  | "mistral"
+  | "bedrock"
+  // One-key access to all models on OpenRouter
+  | "openrouter"
+  // OpenWork cloud — key lives on the server, user authenticates via `ok-cli login`
+  | "openwork"
 
 export interface ModelConfig {
   provider: Provider

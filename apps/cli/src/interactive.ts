@@ -12,15 +12,17 @@ interface InteractiveOptions {
   model: string
   provider: string
   apiKey?: string
+  baseUrl?: string
 }
 
 export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   const { agent } = createSession(
     {
       model: {
-        provider: opts.provider as "anthropic" | "openai" | "google" | "mistral" | "bedrock",
+        provider: opts.provider as import("@openwork/core").Provider,
         model: opts.model,
         apiKey: opts.apiKey,
+        baseUrl: opts.baseUrl,
       },
       cwd: process.cwd(),
     },

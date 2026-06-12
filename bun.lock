@@ -14,17 +14,26 @@
       "name": "@openwork/cli",
       "version": "0.1.0",
       "bin": {
-        "ok-cli": "src/index.ts",
+        "ok-cli": "dist/index.js",
       },
       "dependencies": {
         "@earendil-works/pi-agent-core": "^0.79.1",
         "@earendil-works/pi-ai": "^0.79.1",
         "@earendil-works/pi-tui": "^0.79.1",
+        "@openwork/cloud": "workspace:*",
         "@openwork/core": "workspace:*",
         "@openwork/tools": "workspace:*",
         "chalk": "^5.4.1",
         "dotenv": "^17.4.2",
       },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/cloud": {
+      "name": "@openwork/cloud",
+      "version": "0.1.0",
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5.8.2",
@@ -142,6 +151,8 @@
     "@nodable/entities": ["@nodable/entities@2.1.1", "", {}, "sha512-Pig3HxDIoMgjdEH8OCf/dkcTmLFjJRjWuq8jSnklu284/TKOPibSRERmOykiwmyXTtv61mP+44f3GMx0tLAyjg=="],
 
     "@openwork/cli": ["@openwork/cli@workspace:apps/cli"],
+
+    "@openwork/cloud": ["@openwork/cloud@workspace:packages/cloud"],
 
     "@openwork/core": ["@openwork/core@workspace:packages/core"],
 

@@ -42,6 +42,7 @@ jobs:
             const fs = require('fs');
             const pkg = JSON.parse(fs.readFileSync('package.json'));
             // Remove workspace-only deps (they're bundled into dist)
+            delete pkg.dependencies['@openwork/cloud'];
             delete pkg.dependencies['@openwork/core'];
             delete pkg.dependencies['@openwork/tools'];
             // Point bin to dist

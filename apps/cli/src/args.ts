@@ -2,12 +2,19 @@
  * CLI argument parser for ok-cli.
  */
 
+export type SubCommand = "login" | "logout" | "whoami" | null
+
 export interface CliArgs {
+  subCommand: SubCommand
   task?: string
   model: string
   provider: string
   apiKey?: string
   baseUrl?: string
+  /** Token for `ok-cli login --token <tok>` */
+  loginToken?: string
+  /** Server URL for `ok-cli login --server <url>` */
+  loginServer?: string
   version: boolean
   help: boolean
   verbose: boolean
@@ -15,6 +22,7 @@ export interface CliArgs {
 
 export function parseArgs(argv: string[]): CliArgs {
   const args: CliArgs = {
+    subCommand: null,
     model: process.env["OPENWORK_MODEL"] ?? "claude-sonnet-4-6",
     provider: "anthropic",
     version: false,
@@ -27,6 +35,14 @@ export function parseArgs(argv: string[]): CliArgs {
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     switch (arg) {
+      // ── subcommands ────────────────────────────────────────────────────────
+      case "login":
+      case "logout":
+      case "whoami":
+        args.subCommand = arg
+        break
+
+      // ── flags ──────────────────────────────────────────────────────────────
       case "--version":
       case "-v":
         args.version = true
@@ -52,6 +68,14 @@ export function parseArgs(argv: string[]): CliArgs {
       case "--base-url":
         args.baseUrl = argv[++i]
         break
+      // login-specific
+      case "--token":
+        args.loginToken = argv[++i]
+        break
+      case "--server":
+        args.loginServer = argv[++i]
+        break
+
       default:
         if (!arg?.startsWith("--")) {
           positional.push(arg ?? "")
@@ -59,7 +83,8 @@ export function parseArgs(argv: string[]): CliArgs {
     }
   }
 
-  if (positional.length > 0) {
+  // Positional words that come after a subcommand are ignored (or future use)
+  if (positional.length > 0 && args.subCommand === null) {
     args.task = positional.join(" ")
   }
 
