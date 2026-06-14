@@ -21,8 +21,10 @@ import { runInteractive } from "./interactive.ts"
 import { runOneShot } from "./one-shot.ts"
 import { cmdLogin, cmdLogout, cmdWhoami } from "./auth-commands.ts"
 import { cmdMcp } from "./mcp-commands.ts"
+import { cmdSkill } from "./skill-commands.ts"
 import { readAuth } from "@openwork/cloud"
 import { loadMcpTools } from "@openwork/mcp"
+import { discoverSkills } from "@openwork/skills"
 import { DEFAULT_TOOLS } from "@openwork/tools"
 
 const VERSION = "0.1.0"
@@ -47,6 +49,12 @@ async function main() {
   // ── mcp subcommands ─────────────────────────────────────────────────────────
   if (args.subCommand === "mcp") {
     await cmdMcp(args.mcpArgs ?? [])
+    return
+  }
+
+  // ── skill subcommands ────────────────────────────────────────────────────────
+  if (args.subCommand === "skill") {
+    await cmdSkill(args.skillArgs ?? [])
     return
   }
 
@@ -96,13 +104,19 @@ async function main() {
     console.log(extra + "\n")
   }
 
+  // ── load skills ──────────────────────────────────────────────────────────────
+  const skills = discoverSkills()
+  if (skills.length > 0 && args.verbose) {
+    console.log(chalk.gray(`  ${skills.length} skill${skills.length !== 1 ? "s" : ""} loaded (claude, codex, ok-cli)\n`))
+  }
+
   // ── run ─────────────────────────────────────────────────────────────────────
   const sessionOpts = { model, provider, apiKey, baseUrl }
 
   if (args.task) {
     await runOneShot({ task: args.task, ...sessionOpts, tools: allTools })
   } else {
-    await runInteractive({ ...sessionOpts, tools: allTools })
+    await runInteractive({ ...sessionOpts, tools: allTools, skills })
   }
 
   // Disconnect MCP servers on exit
@@ -125,6 +139,9 @@ ${chalk.bold("Usage:")}
   ok-cli mcp add <name> <cmd> [args]  Add an MCP server (stdio)
   ok-cli mcp remove <name>            Remove an MCP server
   ok-cli mcp test <name>              Test a server connection
+  ok-cli skill list                   List all skills (claude/codex/ok-cli)
+  ok-cli skill show <name>            Show a skill's content
+  ok-cli skill new <name>             Create a new skill file
   ok-cli --version                    Show version
   ok-cli --help                       Show this help
 

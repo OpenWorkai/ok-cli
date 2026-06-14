@@ -23,6 +23,7 @@
         "@openwork/cloud": "workspace:*",
         "@openwork/core": "workspace:*",
         "@openwork/mcp": "workspace:*",
+        "@openwork/skills": "workspace:*",
         "@openwork/tools": "workspace:*",
         "chalk": "^5.4.1",
         "dotenv": "^17.4.2",
@@ -61,6 +62,14 @@
         "@modelcontextprotocol/sdk": "^1.29.0",
         "@sinclair/typebox": "^0.34.49",
       },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.8.2",
+      },
+    },
+    "packages/skills": {
+      "name": "@openwork/skills",
+      "version": "0.1.0",
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5.8.2",
@@ -175,6 +184,8 @@
     "@openwork/core": ["@openwork/core@workspace:packages/core"],
 
     "@openwork/mcp": ["@openwork/mcp@workspace:packages/mcp"],
+
+    "@openwork/skills": ["@openwork/skills@workspace:packages/skills"],
 
     "@openwork/tools": ["@openwork/tools@workspace:packages/tools"],
 

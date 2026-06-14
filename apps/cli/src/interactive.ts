@@ -1,5 +1,13 @@
 /**
  * Interactive REPL — streaming output from pi-agent-core Agent.
+ *
+ * Slash commands:
+ *   /exit /quit      — quit
+ *   /clear           — reset agent context
+ *   /tools           — list available tools
+ *   /skills          — list loaded skills
+ *   /<name> [extra]  — invoke a skill (body + optional extra text)
+ *   /help            — show commands
  */
 
 import { createInterface } from "node:readline"
@@ -7,6 +15,7 @@ import chalk from "chalk"
 import { createSession } from "@openwork/core"
 import { DEFAULT_TOOLS } from "@openwork/tools"
 import type { AgentEvent, AgentTool } from "@earendil-works/pi-agent-core"
+import type { Skill } from "@openwork/skills"
 
 interface InteractiveOptions {
   model: string
@@ -15,9 +24,18 @@ interface InteractiveOptions {
   baseUrl?: string
   /** All tools (built-in + MCP). Defaults to DEFAULT_TOOLS if omitted. */
   tools?: AgentTool[]
+  /** All discovered skills. */
+  skills?: Skill[]
 }
 
 export async function runInteractive(opts: InteractiveOptions): Promise<void> {
+  const skills = opts.skills ?? []
+  // Build lookup map: name → skill (case-insensitive)
+  const skillMap = new Map<string, Skill>()
+  for (const skill of skills) {
+    skillMap.set(skill.name.toLowerCase(), skill)
+  }
+
   const { agent } = createSession(
     {
       model: {
@@ -77,7 +95,11 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   // ─── REPL ─────────────────────────────────────────────────────────────────
 
   const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true })
-  console.log(chalk.gray("Type your request. /exit to quit, /help for commands.\n"))
+
+  const skillHint = skills.length > 0
+    ? chalk.gray(` • ${skills.length} skill${skills.length !== 1 ? "s" : ""} available (/skills to list)`)
+    : ""
+  console.log(chalk.gray("Type your request. /exit to quit, /help for commands.") + skillHint + "\n")
 
   const askLine = (): Promise<string> =>
     new Promise((resolve) => rl.question(chalk.cyan("\nyou › "), resolve))
@@ -91,10 +113,12 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
     }
 
     if (!input) continue
+
+    // ── built-in slash commands ────────────────────────────────────────────
     if (input === "/exit" || input === "/quit") break
 
     if (input === "/help") {
-      printCommands()
+      printCommands(skills.length > 0)
       continue
     }
 
@@ -105,10 +129,84 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
     }
 
     if (input === "/tools") {
-      console.log(chalk.gray("  available: bash, read_file, write_file, list_dir, search\n"))
+      const toolNames = (opts.tools ?? DEFAULT_TOOLS).map((t) => t.name).join(", ")
+      console.log(chalk.gray(`  ${toolNames}\n`))
       continue
     }
 
+    if (input === "/skills") {
+      if (skillMap.size === 0) {
+        console.log(chalk.gray("  No skills loaded. Run: ok-cli skill list\n"))
+      } else {
+        const scopeOrder = ["local", "global", "claude", "codex"] as const
+        const scopeColors: Record<string, (s: string) => string> = {
+          local:  chalk.green,
+          global: chalk.cyan,
+          claude: chalk.magenta,
+          codex:  chalk.yellow,
+        }
+        // Group by scope
+        const groups = new Map<string, Skill[]>()
+        for (const skill of skills) {
+          if (!skill.userInvocable) continue
+          if (!groups.has(skill.scope)) groups.set(skill.scope, [])
+          groups.get(skill.scope)!.push(skill)
+        }
+        for (const scope of scopeOrder) {
+          const group = groups.get(scope)
+          if (!group?.length) continue
+          const label = scopeColors[scope]?.(scope) ?? scope
+          console.log(`\n  ${label}`)
+          for (const s of group) {
+            const desc = s.description
+              ? chalk.gray(`  ${s.description.slice(0, 50)}${s.description.length > 50 ? "…" : ""}`)
+              : ""
+            console.log(`    /${chalk.bold(s.name)}${desc}`)
+          }
+        }
+        console.log()
+      }
+      continue
+    }
+
+    // ── skill invocation: /<name> [extra text] ─────────────────────────────
+    if (input.startsWith("/")) {
+      const [slashName, ...extraParts] = input.slice(1).split(/\s+/)
+      const skillName = slashName?.toLowerCase() ?? ""
+      const skill = skillMap.get(skillName)
+
+      if (skill) {
+        const extra = extraParts.join(" ").trim()
+        let prompt = skill.body
+        if (extra) prompt = `${prompt}\n\n${extra}`
+
+        console.log(
+          chalk.gray(`\n  ▶ skill: `) +
+          chalk.bold(`/${skill.name}`) +
+          (skill.scope !== "global" ? chalk.gray(` [${skill.scope}]`) : "") +
+          (extra ? chalk.gray(` + "${extra.slice(0, 40)}${extra.length > 40 ? "…" : ""}"`) : "")
+        )
+
+        // If skill overrides model, warn (we can't switch mid-session easily)
+        if (skill.model && skill.model !== opts.model) {
+          console.log(chalk.yellow(`  ⚠ skill requests model: ${skill.model} (current: ${opts.model})`))
+        }
+
+        try {
+          await agent.prompt(prompt)
+        } catch (e) {
+          console.error(chalk.red("\nAgent error:"), e)
+        }
+        continue
+      }
+
+      // Unknown slash command
+      console.log(chalk.red(`  Unknown command or skill: /${skillName}`))
+      console.log(chalk.gray(`  Type /skills to see available skills, /help for commands.\n`))
+      continue
+    }
+
+    // ── regular prompt ─────────────────────────────────────────────────────
     try {
       await agent.prompt(input)
     } catch (e) {
@@ -126,12 +224,15 @@ function formatArgs(args: Record<string, unknown>): string {
     .join(", ")
 }
 
-function printCommands() {
+function printCommands(hasSkills: boolean) {
   console.log(`
   ${chalk.bold("Commands:")}
-  /exit    Quit
-  /clear   Reset agent context
-  /tools   List available tools
-  /help    Show this
+  /exit         Quit
+  /clear        Reset agent context
+  /tools        List available tools
+  /skills       List loaded skills${hasSkills ? " (claude + codex + ok-cli)" : ""}
+  /<name>       Invoke a skill by name
+  /<name> ...   Invoke a skill with extra context appended
+  /help         Show this
 `)
 }
