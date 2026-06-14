@@ -11,7 +11,7 @@
  * Falls back to plain boxed format if chalk level < 3 (no true-color).
  */
 
-import chalk, { type ChalkInstance } from "chalk"
+import chalk from "chalk"
 
 // ── Nerd Font powerline glyphs ─────────────────────────────────────────────
 const PL_ARROW   = ""   // solid right arrow
@@ -33,6 +33,23 @@ export interface StatusInfo {
   mcpCount: number
 }
 
+/**
+ * Catppuccin Mocha palette — matches Ghostty's default/popular theme.
+ * Accent colors used as BACKGROUNDS with dark base text (#1e1e2e).
+ * This gives the same vivid p10k-style look the user sees in their prompt.
+ */
+const CAT = {
+  base:    "#1e1e2e",  // dark text on colored bg
+  surface: "#45475a",  // time segment bg
+  text:    "#cdd6f4",  // light text on dark surface
+  blue:    "#89b4fa",  // ok-cli
+  sky:     "#89dceb",  // model
+  green:   "#a6e3a1",  // provider
+  mauve:   "#cba6f7",  // skills
+  peach:   "#fab387",  // MCP
+  yellow:  "#f9e2af",  // (spare)
+} as const
+
 /** Build the segment list from session info. */
 function buildSegments(info: StatusInfo): Segment[] {
   const time = new Date().toLocaleTimeString("en-US", {
@@ -44,41 +61,41 @@ function buildSegments(info: StatusInfo): Segment[] {
   const segs: Segment[] = [
     {
       text: ` ⚡ ok-cli `,
-      bg: "#003f6b",
-      fg: "#00d7ff",
+      bg: CAT.blue,
+      fg: CAT.base,
     },
     {
       text: `  ${info.model} `,
-      bg: "#0d3b66",
-      fg: "#87ceeb",
+      bg: CAT.sky,
+      fg: CAT.base,
     },
     {
       text: ` ${providerIcon(info.provider)} ${info.provider} `,
-      bg: "#1b4332",
-      fg: "#74c69d",
+      bg: CAT.green,
+      fg: CAT.base,
     },
   ]
 
   if (info.skillCount > 0) {
     segs.push({
-      text: ` ✦ ${info.skillCount} skill${info.skillCount !== 1 ? "s" : ""} `,
-      bg: "#3b0764",
-      fg: "#c77dff",
+      text: ` ✦ ${info.skillCount} skills `,
+      bg: CAT.mauve,
+      fg: CAT.base,
     })
   }
 
   if (info.mcpCount > 0) {
     segs.push({
       text: ` ⚙ ${info.mcpCount} MCP `,
-      bg: "#164e63",
-      fg: "#67e8f9",
+      bg: CAT.peach,
+      fg: CAT.base,
     })
   }
 
   segs.push({
     text: `  ${time} `,
-    bg: "#1c1c1c",
-    fg: "#6b7280",
+    bg: CAT.surface,
+    fg: CAT.text,
   })
 
   return segs
