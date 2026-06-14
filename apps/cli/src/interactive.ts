@@ -6,6 +6,7 @@
  *   /clear           — reset agent context
  *   /tools           — list available tools
  *   /skills          — list loaded skills
+ *   /status          — re-print the rainbow status bar
  *   /<name> [extra]  — invoke a skill (body + optional extra text)
  *   /help            — show commands
  */
@@ -16,24 +17,35 @@ import { createSession } from "@openwork/core"
 import { DEFAULT_TOOLS } from "@openwork/tools"
 import type { AgentEvent, AgentTool } from "@earendil-works/pi-agent-core"
 import type { Skill } from "@openwork/skills"
+import { printStatusLine, type StatusInfo } from "./statusline.ts"
 
 interface InteractiveOptions {
   model: string
   provider: string
   apiKey?: string
   baseUrl?: string
+  version?: string
   /** All tools (built-in + MCP). Defaults to DEFAULT_TOOLS if omitted. */
   tools?: AgentTool[]
   /** All discovered skills. */
   skills?: Skill[]
+  /** Number of connected MCP servers (for statusline). */
+  mcpServerCount?: number
 }
 
 export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   const skills = opts.skills ?? []
-  // Build lookup map: name → skill (case-insensitive)
   const skillMap = new Map<string, Skill>()
   for (const skill of skills) {
     skillMap.set(skill.name.toLowerCase(), skill)
+  }
+
+  const statusInfo: StatusInfo = {
+    version: opts.version ?? "0.1.0",
+    model: opts.model,
+    provider: opts.provider,
+    skillCount: skills.length,
+    mcpCount: opts.mcpServerCount ?? 0,
   }
 
   const { agent } = createSession(
@@ -49,7 +61,16 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
     opts.tools ?? DEFAULT_TOOLS
   )
 
-  // Subscribe to streaming events
+  // ── Rainbow status bar at startup ────────────────────────────────────────
+  printStatusLine(statusInfo)
+  console.log()
+
+  const hintParts = [chalk.gray("Type your request.")]
+  if (skillMap.size > 0) hintParts.push(chalk.gray(`/skills to list ${skills.length} skills`))
+  hintParts.push(chalk.gray("/help for commands"))
+  console.log(hintParts.join(chalk.gray(" • ")) + "\n")
+
+  // ── Event subscription ────────────────────────────────────────────────────
   agent.subscribe(async (event: AgentEvent) => {
     switch (event.type) {
       case "agent_start":
@@ -87,7 +108,9 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
         break
 
       case "agent_end":
+        // Refresh statusline after each agent turn (time updates)
         process.stdout.write("\n")
+        printStatusLine(statusInfo)
         break
     }
   })
@@ -95,11 +118,6 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   // ─── REPL ─────────────────────────────────────────────────────────────────
 
   const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: true })
-
-  const skillHint = skills.length > 0
-    ? chalk.gray(` • ${skills.length} skill${skills.length !== 1 ? "s" : ""} available (/skills to list)`)
-    : ""
-  console.log(chalk.gray("Type your request. /exit to quit, /help for commands.") + skillHint + "\n")
 
   const askLine = (): Promise<string> =>
     new Promise((resolve) => rl.question(chalk.cyan("\nyou › "), resolve))
@@ -118,13 +136,19 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
     if (input === "/exit" || input === "/quit") break
 
     if (input === "/help") {
-      printCommands(skills.length > 0)
+      printCommands(skillMap.size > 0)
       continue
     }
 
     if (input === "/clear") {
       agent.reset()
       console.log(chalk.gray("  context cleared\n"))
+      continue
+    }
+
+    if (input === "/status") {
+      printStatusLine(statusInfo)
+      console.log()
       continue
     }
 
@@ -145,7 +169,6 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
           claude: chalk.magenta,
           codex:  chalk.yellow,
         }
-        // Group by scope
         const groups = new Map<string, Skill[]>()
         for (const skill of skills) {
           if (!skill.userInvocable) continue
@@ -187,7 +210,6 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
           (extra ? chalk.gray(` + "${extra.slice(0, 40)}${extra.length > 40 ? "…" : ""}"`) : "")
         )
 
-        // If skill overrides model, warn (we can't switch mid-session easily)
         if (skill.model && skill.model !== opts.model) {
           console.log(chalk.yellow(`  ⚠ skill requests model: ${skill.model} (current: ${opts.model})`))
         }
@@ -200,7 +222,6 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
         continue
       }
 
-      // Unknown slash command
       console.log(chalk.red(`  Unknown command or skill: /${skillName}`))
       console.log(chalk.gray(`  Type /skills to see available skills, /help for commands.\n`))
       continue
@@ -230,6 +251,7 @@ function printCommands(hasSkills: boolean) {
   /exit         Quit
   /clear        Reset agent context
   /tools        List available tools
+  /status       Re-print the rainbow status bar
   /skills       List loaded skills${hasSkills ? " (claude + codex + ok-cli)" : ""}
   /<name>       Invoke a skill by name
   /<name> ...   Invoke a skill with extra context appended

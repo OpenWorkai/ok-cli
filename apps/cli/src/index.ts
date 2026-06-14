@@ -82,41 +82,34 @@ async function main() {
     baseUrl = baseUrl ?? `${auth.server}/v1`
   }
 
-  // ── banner ──────────────────────────────────────────────────────────────────
-  const providerLabel =
-    provider === "openwork" ? chalk.magenta("openwork") : chalk.gray(provider)
-  const banner = chalk.bold.cyan("⚡ OpenWork CLI") + chalk.gray(` v${VERSION}`)
-  console.log(banner)
-  console.log(
-    chalk.gray(`  model: ${model}  provider: `) +
-      providerLabel +
-      chalk.gray(`  cwd: ${process.cwd()}\n`)
-  )
-
   // ── load MCP tools ──────────────────────────────────────────────────────────
   const mcp = await loadMcpTools({ verbose: args.verbose })
   const allTools = [...DEFAULT_TOOLS, ...mcp.tools]
 
-  if (mcp.serverCount > 0) {
-    const extra = mcp.tools.length > 0
-      ? chalk.gray(`  +${mcp.tools.length} MCP tool${mcp.tools.length !== 1 ? "s" : ""} from ${mcp.serverCount} server${mcp.serverCount !== 1 ? "s" : ""}`)
-      : chalk.yellow(`  MCP: ${mcp.serverCount} server${mcp.serverCount !== 1 ? "s" : ""} connected, 0 tools`)
-    console.log(extra + "\n")
-  }
-
   // ── load skills ──────────────────────────────────────────────────────────────
   const skills = discoverSkills()
-  if (skills.length > 0 && args.verbose) {
-    console.log(chalk.gray(`  ${skills.length} skill${skills.length !== 1 ? "s" : ""} loaded (claude, codex, ok-cli)\n`))
-  }
 
-  // ── run ─────────────────────────────────────────────────────────────────────
-  const sessionOpts = { model, provider, apiKey, baseUrl }
-
+  // ── one-shot: keep a simple text banner ────────────────────────────────────
   if (args.task) {
-    await runOneShot({ task: args.task, ...sessionOpts, tools: allTools })
+    const providerLabel = provider === "openwork" ? chalk.magenta("openwork") : chalk.gray(provider)
+    console.log(
+      chalk.bold.cyan("⚡ ok-cli") +
+      chalk.gray(` v${VERSION}  model: ${model}  provider: `) +
+      providerLabel + "\n"
+    )
+    await runOneShot({ task: args.task, model, provider, apiKey, baseUrl, tools: allTools })
   } else {
-    await runInteractive({ ...sessionOpts, tools: allTools, skills })
+    // Interactive: statusline handles the banner
+    await runInteractive({
+      model,
+      provider,
+      apiKey,
+      baseUrl,
+      version: VERSION,
+      tools: allTools,
+      skills,
+      mcpServerCount: mcp.serverCount,
+    })
   }
 
   // Disconnect MCP servers on exit
