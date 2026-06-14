@@ -2,7 +2,7 @@
  * CLI argument parser for ok-cli.
  */
 
-export type SubCommand = "login" | "logout" | "whoami" | null
+export type SubCommand = "login" | "logout" | "whoami" | "mcp" | null
 
 export interface CliArgs {
   subCommand: SubCommand
@@ -15,6 +15,8 @@ export interface CliArgs {
   loginToken?: string
   /** Server URL for `ok-cli login --server <url>` */
   loginServer?: string
+  /** Remaining args after `ok-cli mcp` (e.g. ["list"] or ["add", "name", "cmd", ...]) */
+  mcpArgs?: string[]
   version: boolean
   help: boolean
   verbose: boolean
@@ -40,6 +42,13 @@ export function parseArgs(argv: string[]): CliArgs {
       case "logout":
       case "whoami":
         args.subCommand = arg
+        break
+
+      case "mcp":
+        // Everything after "mcp" is consumed as mcpArgs
+        args.subCommand = "mcp"
+        args.mcpArgs = argv.slice(i + 1)
+        i = argv.length // stop parsing
         break
 
       // ── flags ──────────────────────────────────────────────────────────────
@@ -83,7 +92,6 @@ export function parseArgs(argv: string[]): CliArgs {
     }
   }
 
-  // Positional words that come after a subcommand are ignored (or future use)
   if (positional.length > 0 && args.subCommand === null) {
     args.task = positional.join(" ")
   }

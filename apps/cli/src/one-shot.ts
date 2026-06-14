@@ -5,7 +5,7 @@
 import chalk from "chalk"
 import { createSession } from "@openwork/core"
 import { DEFAULT_TOOLS } from "@openwork/tools"
-import type { AgentEvent } from "@earendil-works/pi-agent-core"
+import type { AgentEvent, AgentTool } from "@earendil-works/pi-agent-core"
 
 interface OneShotOptions {
   task: string
@@ -13,6 +13,8 @@ interface OneShotOptions {
   provider: string
   apiKey?: string
   baseUrl?: string
+  /** All tools (built-in + MCP). Defaults to DEFAULT_TOOLS if omitted. */
+  tools?: AgentTool[]
 }
 
 export async function runOneShot(opts: OneShotOptions): Promise<void> {
@@ -28,7 +30,7 @@ export async function runOneShot(opts: OneShotOptions): Promise<void> {
       },
       cwd: process.cwd(),
     },
-    DEFAULT_TOOLS
+    opts.tools ?? DEFAULT_TOOLS
   )
 
   agent.subscribe(async (event: AgentEvent) => {

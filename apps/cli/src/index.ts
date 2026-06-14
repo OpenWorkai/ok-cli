@@ -9,6 +9,8 @@
  *   ok-cli --provider openrouter --model anthropic/claude-sonnet-4-6 "..."
  *   ok-cli login                # sign in to OpenWork Cloud
  *   ok-cli --provider openwork  # use cloud backend (after login)
+ *   ok-cli mcp list             # list configured MCP servers
+ *   ok-cli mcp add <name> <cmd> [args...] # add an MCP server
  *   ok-cli --version            # show version
  */
 
@@ -18,7 +20,10 @@ import { parseArgs } from "./args.ts"
 import { runInteractive } from "./interactive.ts"
 import { runOneShot } from "./one-shot.ts"
 import { cmdLogin, cmdLogout, cmdWhoami } from "./auth-commands.ts"
+import { cmdMcp } from "./mcp-commands.ts"
 import { readAuth } from "@openwork/cloud"
+import { loadMcpTools } from "@openwork/mcp"
+import { DEFAULT_TOOLS } from "@openwork/tools"
 
 const VERSION = "0.1.0"
 
@@ -39,6 +44,12 @@ async function main() {
     return
   }
 
+  // ── mcp subcommands ─────────────────────────────────────────────────────────
+  if (args.subCommand === "mcp") {
+    await cmdMcp(args.mcpArgs ?? [])
+    return
+  }
+
   // ── meta flags ──────────────────────────────────────────────────────────────
   if (args.version) {
     console.log(`ok-cli v${VERSION}`)
@@ -52,7 +63,6 @@ async function main() {
   // ── resolve provider ────────────────────────────────────────────────────────
   let { provider, apiKey, baseUrl, model } = args
 
-  // Auto-detect openwork provider when --provider openwork and no explicit key
   if (provider === "openwork" && !apiKey) {
     const auth = await readAuth()
     if (!auth) {
@@ -62,10 +72,6 @@ async function main() {
     }
     apiKey = auth.token
     baseUrl = baseUrl ?? `${auth.server}/v1`
-    // Default openwork model
-    if (model === "claude-sonnet-4-6") {
-      model = "claude-sonnet-4-6" // passthrough — backend decides actual model
-    }
   }
 
   // ── banner ──────────────────────────────────────────────────────────────────
@@ -79,12 +85,28 @@ async function main() {
       chalk.gray(`  cwd: ${process.cwd()}\n`)
   )
 
-  // ── run ─────────────────────────────────────────────────────────────────────
-  if (args.task) {
-    await runOneShot({ task: args.task, model, provider, apiKey, baseUrl })
-  } else {
-    await runInteractive({ model, provider, apiKey, baseUrl })
+  // ── load MCP tools ──────────────────────────────────────────────────────────
+  const mcp = await loadMcpTools({ verbose: args.verbose })
+  const allTools = [...DEFAULT_TOOLS, ...mcp.tools]
+
+  if (mcp.serverCount > 0) {
+    const extra = mcp.tools.length > 0
+      ? chalk.gray(`  +${mcp.tools.length} MCP tool${mcp.tools.length !== 1 ? "s" : ""} from ${mcp.serverCount} server${mcp.serverCount !== 1 ? "s" : ""}`)
+      : chalk.yellow(`  MCP: ${mcp.serverCount} server${mcp.serverCount !== 1 ? "s" : ""} connected, 0 tools`)
+    console.log(extra + "\n")
   }
+
+  // ── run ─────────────────────────────────────────────────────────────────────
+  const sessionOpts = { model, provider, apiKey, baseUrl }
+
+  if (args.task) {
+    await runOneShot({ task: args.task, ...sessionOpts, tools: allTools })
+  } else {
+    await runInteractive({ ...sessionOpts, tools: allTools })
+  }
+
+  // Disconnect MCP servers on exit
+  await mcp.close()
 }
 
 function printHelp() {
@@ -99,6 +121,10 @@ ${chalk.bold("Usage:")}
   ok-cli login [--token <t>]          Sign in to OpenWork Cloud
   ok-cli logout                       Clear saved credentials
   ok-cli whoami                       Show current login status
+  ok-cli mcp list                     List configured MCP servers
+  ok-cli mcp add <name> <cmd> [args]  Add an MCP server (stdio)
+  ok-cli mcp remove <name>            Remove an MCP server
+  ok-cli mcp test <name>              Test a server connection
   ok-cli --version                    Show version
   ok-cli --help                       Show this help
 
@@ -109,19 +135,15 @@ ${chalk.bold("Providers:")}
   ${chalk.cyan("openrouter")}   OPENROUTER_API_KEY  —  one key for every model
   ${chalk.cyan("openwork")}     No key needed — run \`ok-cli login\` first
 
+${chalk.bold("MCP:")}
+  ok-cli mcp add filesystem npx -y @modelcontextprotocol/server-filesystem /path
+  ok-cli mcp add github npx -y @modelcontextprotocol/server-github
+  ok-cli mcp list
+
 ${chalk.bold("OpenRouter examples:")}
   ok-cli --provider openrouter --model anthropic/claude-sonnet-4-6 "..."
   ok-cli --provider openrouter --model openai/gpt-4o "..."
   ok-cli --provider openrouter --model google/gemini-2.0-flash "..."
-
-${chalk.bold("OpenWork Cloud:")}
-  ok-cli login                        # one-time setup
-  ok-cli --provider openwork "..."    # all models, no API key management
-
-${chalk.bold("Other examples:")}
-  ok-cli "explain this codebase"
-  ok-cli "fix the failing tests in src/"
-  ok-cli --provider openai --model gpt-4o "refactor main.ts"
 
 ${chalk.bold("Environment:")}
   ANTHROPIC_API_KEY     Anthropic key

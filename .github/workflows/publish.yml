@@ -44,6 +44,7 @@ jobs:
             // Remove workspace-only deps (they're bundled into dist)
             delete pkg.dependencies['@openwork/cloud'];
             delete pkg.dependencies['@openwork/core'];
+            delete pkg.dependencies['@openwork/mcp'];
             delete pkg.dependencies['@openwork/tools'];
             // Point bin to dist
             pkg.bin = { 'ok-cli': 'dist/index.js' };

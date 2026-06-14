@@ -1,0 +1,21 @@
+{
+  "name": "@openwork/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpenWork MCP client — connect to MCP servers and bridge their tools to the agent",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@earendil-works/pi-agent-core": "^0.79.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@sinclair/typebox": "^0.34.49"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.8.2"
+  }
+}
