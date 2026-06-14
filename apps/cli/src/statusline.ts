@@ -119,6 +119,45 @@ export function renderStatusLine(info: StatusInfo): string {
 /** Print the statusline to stdout, followed by a newline. */
 export function printStatusLine(info: StatusInfo): void {
   process.stdout.write(renderStatusLine(info) + "\n")
+  // Also update the Ghostty / terminal tab title via OSC 2
+  setTerminalTitle(info)
+}
+
+/**
+ * Update the terminal window/tab title via OSC 2.
+ * Ghostty, iTerm2, and most modern terminals support this.
+ * Format: ⚡ ok-cli | claude-sonnet-4-6 | anthropic
+ */
+export function setTerminalTitle(info: StatusInfo): void {
+  // Only emit if stdout is a TTY (skip in pipes / CI)
+  if (!process.stdout.isTTY) return
+  const parts = [`⚡ ok-cli`, info.model, info.provider]
+  if (info.mcpCount > 0) parts.push(`${info.mcpCount} MCP`)
+  const title = parts.join("  │  ")
+  // OSC 2 = set window title; BEL (0x07) terminates
+  process.stdout.write(`\x1b]2;${title}\x07`)
+}
+
+/**
+ * Restore terminal title to a plain shell title on exit.
+ * Uses OSC 2 with empty string; the shell will repaint its own title next.
+ */
+export function clearTerminalTitle(): void {
+  if (!process.stdout.isTTY) return
+  process.stdout.write(`\x1b]2;\x07`)
+}
+
+/**
+ * Emit OSC 7 (current working directory notification).
+ * Ghostty uses this to enable "New Tab in Same Directory" and
+ * to display the cwd in the tab bar when the title is unset.
+ */
+export function notifyCwd(cwd = process.cwd()): void {
+  if (!process.stdout.isTTY) return
+  // Format: file://hostname/path  (RFC 8089)
+  const hostname = process.env["HOSTNAME"] ?? "localhost"
+  const encoded = encodeURIComponent(cwd).replace(/%2F/g, "/")
+  process.stdout.write(`\x1b]7;file://${hostname}${encoded}\x07`)
 }
 
 // ── Provider icons ─────────────────────────────────────────────────────────

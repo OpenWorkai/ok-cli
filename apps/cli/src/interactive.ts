@@ -17,7 +17,7 @@ import { createSession } from "@openwork/core"
 import { DEFAULT_TOOLS } from "@openwork/tools"
 import type { AgentEvent, AgentTool } from "@earendil-works/pi-agent-core"
 import type { Skill } from "@openwork/skills"
-import { printStatusLine, type StatusInfo } from "./statusline.ts"
+import { printStatusLine, clearTerminalTitle, notifyCwd, type StatusInfo } from "./statusline.ts"
 
 interface InteractiveOptions {
   model: string
@@ -61,8 +61,9 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
     opts.tools ?? DEFAULT_TOOLS
   )
 
-  // ── Rainbow status bar at startup ────────────────────────────────────────
-  printStatusLine(statusInfo)
+  // ── Ghostty-native signals ───────────────────────────────────────────────
+  notifyCwd()          // OSC 7: tell Ghostty the cwd for "New Tab here"
+  printStatusLine(statusInfo)   // OSC 2 title + rainbow bar
   console.log()
 
   const hintParts = [chalk.gray("Type your request.")]
@@ -236,6 +237,8 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   }
 
   rl.close()
+  // Restore terminal title so the shell can repaint its own
+  clearTerminalTitle()
   console.log(chalk.gray("\nBye!"))
 }
 
