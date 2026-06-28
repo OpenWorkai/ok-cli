@@ -144,6 +144,7 @@ ${chalk.bold("Providers:")}
   ${chalk.cyan("google")}       GOOGLE_API_KEY
   ${chalk.cyan("openrouter")}   OPENROUTER_API_KEY  —  one key for every model
   ${chalk.cyan("openwork")}     No key needed — run \`ok-cli login\` first
+  ${chalk.cyan("nvidia")}       NVIDIA_API_KEY  —  integrate.api.nvidia.com (deepseek/llama/mistral/qwen)
 
 ${chalk.bold("MCP:")}
   ok-cli mcp add filesystem npx -y @modelcontextprotocol/server-filesystem /path

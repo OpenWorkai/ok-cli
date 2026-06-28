@@ -12,6 +12,8 @@ export type Provider =
   | "openrouter"
   // OpenWork cloud — key lives on the server, user authenticates via `ok-cli login`
   | "openwork"
+  // NVIDIA NIM OpenAI-compatible API (integrate.api.nvidia.com)
+  | "nvidia"
 
 export interface ModelConfig {
   provider: Provider

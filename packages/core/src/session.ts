@@ -71,6 +71,17 @@ function resolveModel(
     } as Model<Api>
   }
 
+  if (provider === "nvidia") {
+    // NVIDIA NIM is OpenAI-compatible (integrate.api.nvidia.com/v1).
+    const base = getModel("openai", "gpt-4o")
+    return {
+      ...base,
+      id: modelId,
+      provider: "openai",
+      baseUrl: baseUrl ?? "https://integrate.api.nvidia.com/v1",
+    } as Model<Api>
+  }
+
   // Standard pi-ai provider
   return getModel(
     provider as Parameters<typeof getModel>[0],
@@ -96,6 +107,10 @@ export function createSession(
       if (modelConfig.apiKey) return modelConfig.apiKey
       // openwork must supply an explicit key (no env var for this provider)
       if (modelConfig.provider === "openwork") return undefined
+      // nvidia: read NVIDIA_API_KEY from env (routed as openai internally)
+      if (modelConfig.provider === "nvidia") {
+        return process.env["NVIDIA_API_KEY"] ?? undefined
+      }
       return getEnvApiKey(provider as Parameters<typeof getEnvApiKey>[0])
     },
     streamFn: (m, ctx, opts) => streamSimple(m, ctx, opts),
