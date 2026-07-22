@@ -92,10 +92,11 @@ function resolveModel(provider: string, modelId: string, baseUrl?: string): Mode
   }
 
   // Standard pi-ai provider
-  return getModel(
+  const model = getModel(
     provider as Parameters<typeof getModel>[0],
     modelId as Parameters<typeof getModel>[1]
   )
+  return baseUrl ? ({ ...model, baseUrl } as Model<Api>) : model
 }
 
 export function createSession(

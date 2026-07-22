@@ -15,3 +15,19 @@ test("forwards the beforeToolCall hook to the agent", () => {
 
   expect(agent.beforeToolCall).toBe(beforeToolCall)
 })
+
+test("applies an explicit base URL to a standard OpenAI model", () => {
+  const { agent } = createSession(
+    {
+      model: {
+        provider: "openai",
+        model: "gpt-4o-mini",
+        baseUrl: "https://proxy.example/v1",
+      },
+      cwd: process.cwd(),
+    },
+    []
+  )
+
+  expect(agent.state.model.baseUrl).toBe("https://proxy.example/v1")
+})
