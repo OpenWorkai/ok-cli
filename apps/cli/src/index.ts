@@ -25,6 +25,7 @@ import { cmdLogin, cmdLogout, cmdWhoami } from "./auth-commands.ts"
 import { runInteractive } from "./interactive.ts"
 import { cmdMcp } from "./mcp-commands.ts"
 import { OneShotApiError, runOneShot } from "./one-shot.ts"
+import { runRpc } from "./rpc.ts"
 import { cmdSkill } from "./skill-commands.ts"
 
 const VERSION = "0.1.0"
@@ -90,6 +91,18 @@ async function main() {
   const skills = discoverSkills()
 
   try {
+    if (args.mode === "rpc") {
+      await runRpc({
+        model,
+        provider,
+        apiKey,
+        baseUrl,
+        tools: allTools,
+        allowAll: args.allowAll,
+      })
+      return
+    }
+
     // ── one-shot: keep a simple text banner ──────────────────────────────────
     if (args.task) {
       if (!args.quiet) {
@@ -134,6 +147,7 @@ ${chalk.bold("ok-cli")} — OpenWork CLI Agent v${VERSION}
 
 ${chalk.bold("Usage:")}
   ok-cli                              Interactive REPL
+  ok-cli --mode rpc                   Headless JSONL transport for OpenWork Desktop
   ok-cli "<task>"                     Run one-shot task
   ok-cli --model <id>                 Override model (default: claude-sonnet-4-6)
   ok-cli --provider <name>            Provider (see below)

@@ -3,9 +3,11 @@
  */
 
 export type SubCommand = "login" | "logout" | "whoami" | "mcp" | "skill" | null
+export type CliMode = "interactive" | "rpc"
 
 export interface CliArgs {
   subCommand: SubCommand
+  mode: CliMode
   task?: string
   model: string
   provider: string
@@ -30,6 +32,7 @@ export interface CliArgs {
 export function parseArgs(argv: string[]): CliArgs {
   const args: CliArgs = {
     subCommand: null,
+    mode: "interactive",
     model: process.env.OPENWORK_MODEL ?? "claude-sonnet-4-6",
     provider: "anthropic",
     version: false,
@@ -84,6 +87,11 @@ export function parseArgs(argv: string[]): CliArgs {
       case "--allow-all":
         args.allowAll = true
         break
+      case "--mode": {
+        const mode = argv[++i]
+        if (mode === "rpc") args.mode = mode
+        break
+      }
       case "--model":
       case "-m":
         args.model = argv[++i] ?? args.model

@@ -11,3 +11,12 @@ test("--allow-all explicitly enables unrestricted one-shot tools", () => {
   expect(args.allowAll).toBe(true)
   expect(args.task).toBe("update the project")
 })
+
+test("--mode rpc selects the desktop JSONL transport without becoming a task", () => {
+  const args = parseArgs(["--mode", "rpc", "--provider", "openai", "--model", "gpt-4.1"])
+
+  expect(args.mode).toBe("rpc")
+  expect(args.task).toBeUndefined()
+  expect(args.provider).toBe("openai")
+  expect(args.model).toBe("gpt-4.1")
+})
