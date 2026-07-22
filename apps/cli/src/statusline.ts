@@ -1,28 +1,48 @@
 /**
  * Powerline-style rainbow status bar for ok-cli REPL.
  *
- * Renders colored segments with Nerd Font powerline arrows:
+ * Layout — bar starts/ends with rounded caps; segments connect via solid arrows:
  *
- *   ⚡ ok-cli  claude-sonnet-4-6  anthropic  56 skills  2 MCP  13:18
+ *    ⚡ ok-cli ›  claude-sonnet-4-6 ›  anthropic ›  ✦ 86 skills ›  02:01 ❯
+ *    ╰── ROUND LEFT                                        ROUND RIGHT ──╯ ❯
  *
- * Each segment uses a distinct background color. The  separator is
- * colored to create the "arrow" cut-out effect.
- *
- * Falls back to plain boxed format if chalk level < 3 (no true-color).
+ * Glyphs (Nerd Font required):
+ *     left  rounded cap (bar start)
+ *     right rounded cap (bar end) + ❯ suffix
+ *     solid right arrow (between segments)
+ *     clock icon (time segment)
  */
 
 import chalk from "chalk"
 
-// ── Nerd Font powerline glyphs ─────────────────────────────────────────────
-const PL_ARROW   = ""   // solid right arrow
-const PL_THIN    = ""   // thin right arrow
+// ── Nerd Font glyphs (Unicode escapes — avoids encoding drift in source) ───
+const PL_ROUND_LEFT = "" // ❬ left  rounded cap — bar start
+const PL_ROUND_RIGHT = "" // ❭ right rounded cap — bar end
+const PL_ARROW = "" // ▶ solid right arrow — between segments
+const ICON_CLOCK = "" // 🕐 clock (fa-clock-o)
+const ICON_BRAIN = "" // rss-ish / use for model (see providerIcon for real ones)
 
-// ── Segment definitions ────────────────────────────────────────────────────
+// ── Catppuccin Mocha palette ───────────────────────────────────────────────
+const CAT = {
+  base: "#1e1e2e", // dark text on colored segments
+  surface: "#45475a", // time segment background
+  text: "#cdd6f4", // light text on dark surface segment
+  blue: "#89b4fa", // ok-cli brand
+  sky: "#89dceb", // model
+  green: "#a6e3a1", // provider
+  mauve: "#cba6f7", // skills
+  peach: "#fab387", // MCP
+  overlay: "#585b70", // session ID
+  yellow: "#f9e2af", // ask mode
+  red: "#f38ba8", // safe mode
+} as const
+
+// ── Types ──────────────────────────────────────────────────────────────────
 
 interface Segment {
   text: string
-  bg: string   // hex background
-  fg: string   // hex foreground
+  bg: string // hex background color
+  fg: string // hex foreground (text) color
 }
 
 export interface StatusInfo {
@@ -31,26 +51,12 @@ export interface StatusInfo {
   provider: string
   skillCount: number
   mcpCount: number
+  sessionId?: string
+  mode?: "safe" | "ask" | "allow-all"
 }
 
-/**
- * Catppuccin Mocha palette — matches Ghostty's default/popular theme.
- * Accent colors used as BACKGROUNDS with dark base text (#1e1e2e).
- * This gives the same vivid p10k-style look the user sees in their prompt.
- */
-const CAT = {
-  base:    "#1e1e2e",  // dark text on colored bg
-  surface: "#45475a",  // time segment bg
-  text:    "#cdd6f4",  // light text on dark surface
-  blue:    "#89b4fa",  // ok-cli
-  sky:     "#89dceb",  // model
-  green:   "#a6e3a1",  // provider
-  mauve:   "#cba6f7",  // skills
-  peach:   "#fab387",  // MCP
-  yellow:  "#f9e2af",  // (spare)
-} as const
+// ── Segment builder ────────────────────────────────────────────────────────
 
-/** Build the segment list from session info. */
 function buildSegments(info: StatusInfo): Segment[] {
   const time = new Date().toLocaleTimeString("en-US", {
     hour: "2-digit",
@@ -59,133 +65,131 @@ function buildSegments(info: StatusInfo): Segment[] {
   })
 
   const segs: Segment[] = [
-    {
-      text: ` ⚡ ok-cli `,
-      bg: CAT.blue,
-      fg: CAT.base,
-    },
-    {
-      text: `  ${info.model} `,
-      bg: CAT.sky,
-      fg: CAT.base,
-    },
-    {
-      text: ` ${providerIcon(info.provider)} ${info.provider} `,
-      bg: CAT.green,
-      fg: CAT.base,
-    },
+    { text: " ⚡ ok-cli ", bg: CAT.blue, fg: CAT.base },
+    { text: `  ${info.model} `, bg: CAT.sky, fg: CAT.base },
+    { text: ` ${providerIcon(info.provider)} ${info.provider} `, bg: CAT.green, fg: CAT.base },
   ]
 
   if (info.skillCount > 0) {
-    segs.push({
-      text: ` ✦ ${info.skillCount} skills `,
-      bg: CAT.mauve,
-      fg: CAT.base,
-    })
+    segs.push({ text: ` ✦ ${info.skillCount} skills `, bg: CAT.mauve, fg: CAT.base })
   }
-
   if (info.mcpCount > 0) {
-    segs.push({
-      text: ` ⚙ ${info.mcpCount} MCP `,
-      bg: CAT.peach,
-      fg: CAT.base,
-    })
+    segs.push({ text: ` ⚙ ${info.mcpCount} MCP `, bg: CAT.peach, fg: CAT.base })
+  }
+  if (info.mode && info.mode !== "allow-all") {
+    const modeBg = info.mode === "safe" ? CAT.green : CAT.yellow
+    segs.push({ text: ` ${info.mode} `, bg: modeBg, fg: CAT.base })
+  }
+  if (info.sessionId) {
+    // Show last two words of ID (e.g. "swift-river") — date prefix is noise
+    const shortId = info.sessionId.slice(7) // strip "YYMMDD-"
+    segs.push({ text: ` # ${shortId} `, bg: CAT.overlay, fg: CAT.text })
   }
 
-  segs.push({
-    text: `  ${time} `,
-    bg: CAT.surface,
-    fg: CAT.text,
-  })
+  // Time segment — clock icon + HH:MM
+  segs.push({ text: ` ${ICON_CLOCK} ${time} `, bg: CAT.surface, fg: CAT.text })
 
   return segs
 }
 
-/** Render the full powerline statusline string. */
+// ── Renderer ───────────────────────────────────────────────────────────────
+
+/**
+ * Render the full powerline bar:
+ *   [ROUND_LEFT][seg0][ARROW][seg1][ARROW]...[segN][ROUND_RIGHT] ❯
+ *
+ * Transition arrows are colored: fg = left segment bg, bg = right segment bg.
+ */
 export function renderStatusLine(info: StatusInfo): string {
   const segs = buildSegments(info)
 
   if (chalk.level < 3) {
-    // Fallback: plain colored text, no background
-    return segs
-      .map((s) => chalk.hex(s.fg)(s.text.trim()))
-      .join(chalk.gray(" │ "))
+    // No true-color: plain pipe-separated fallback
+    return segs.map((s) => chalk.hex(s.fg)(s.text.trim())).join(chalk.gray(" | "))
   }
 
   let out = ""
+  const first = segs[0]
+  if (!first) return out
 
-  for (let i = 0; i < segs.length; i++) {
-    const seg = segs[i]!
-    const nextSeg = segs[i + 1]
+  // Opening rounded cap (foreground = first segment bg, no terminal bg)
+  out += chalk.hex(first.bg)(PL_ROUND_LEFT)
 
-    // Segment body: fg text on colored bg
+  for (const [i, seg] of segs.entries()) {
+    const next = segs[i + 1]
+
+    // Segment body
     out += chalk.bgHex(seg.bg).hex(seg.fg)(seg.text)
 
-    // Powerline arrow: seg.bg as fg, nextSeg.bg as bg (or reset at end)
-    if (nextSeg) {
-      out += chalk.bgHex(nextSeg.bg).hex(seg.bg)(PL_ARROW)
-    } else {
-      // Last segment: arrow on transparent background
-      out += chalk.hex(seg.bg)(PL_ARROW)
+    if (next) {
+      // Transition arrow: appears to "point into" the next segment
+      // fg = current segment's bg (arrow color), bg = next segment's bg
+      out += chalk.bgHex(next.bg).hex(seg.bg)(PL_ARROW)
     }
   }
+
+  // Closing rounded cap + prompt arrow
+  const last = segs.at(-1)
+  if (!last) return out
+  out += chalk.hex(last.bg)(PL_ROUND_RIGHT)
+  out += ` ${chalk.bold.hex(CAT.blue)("❯")}` // ❯
 
   return out
 }
 
-/** Print the statusline to stdout, followed by a newline. */
+/** Print the statusline to stdout (+ newline) and update Ghostty tab title. */
 export function printStatusLine(info: StatusInfo): void {
-  process.stdout.write(renderStatusLine(info) + "\n")
-  // Also update the Ghostty / terminal tab title via OSC 2
+  process.stdout.write(`${renderStatusLine(info)}\n`)
   setTerminalTitle(info)
 }
 
+// ── Ghostty / terminal OSC sequences ──────────────────────────────────────
+
 /**
- * Update the terminal window/tab title via OSC 2.
- * Ghostty, iTerm2, and most modern terminals support this.
- * Format: ⚡ ok-cli | claude-sonnet-4-6 | anthropic
+ * OSC 2: set window/tab title.
+ * Ghostty shows this in the tab bar — visible even when REPL is scrolled.
  */
 export function setTerminalTitle(info: StatusInfo): void {
-  // Only emit if stdout is a TTY (skip in pipes / CI)
   if (!process.stdout.isTTY) return
-  const parts = [`⚡ ok-cli`, info.model, info.provider]
+  const parts = ["⚡ ok-cli", info.model, info.provider]
   if (info.mcpCount > 0) parts.push(`${info.mcpCount} MCP`)
-  const title = parts.join("  │  ")
-  // OSC 2 = set window title; BEL (0x07) terminates
-  process.stdout.write(`\x1b]2;${title}\x07`)
+  process.stdout.write(`\x1b]2;${parts.join("  │  ")}\x07`)
 }
 
 /**
- * Restore terminal title to a plain shell title on exit.
- * Uses OSC 2 with empty string; the shell will repaint its own title next.
+ * OSC 2: clear title on exit so the shell can repaint its own.
  */
 export function clearTerminalTitle(): void {
   if (!process.stdout.isTTY) return
-  process.stdout.write(`\x1b]2;\x07`)
+  process.stdout.write("\x1b]2;\x07")
 }
 
 /**
- * Emit OSC 7 (current working directory notification).
- * Ghostty uses this to enable "New Tab in Same Directory" and
- * to display the cwd in the tab bar when the title is unset.
+ * OSC 7: notify Ghostty of the current working directory.
+ * Enables "New Tab in Same Directory" and cwd display in tab bar.
  */
 export function notifyCwd(cwd = process.cwd()): void {
   if (!process.stdout.isTTY) return
-  // Format: file://hostname/path  (RFC 8089)
-  const hostname = process.env["HOSTNAME"] ?? "localhost"
+  const hostname = process.env.HOSTNAME ?? "localhost"
   const encoded = encodeURIComponent(cwd).replace(/%2F/g, "/")
   process.stdout.write(`\x1b]7;file://${hostname}${encoded}\x07`)
 }
 
-// ── Provider icons ─────────────────────────────────────────────────────────
+// ── Provider icons (Nerd Font) ─────────────────────────────────────────────
 
 function providerIcon(provider: string): string {
   switch (provider) {
-    case "anthropic":  return ""    // claude icon (Nerd Font  or fallback ✦)
-    case "openai":     return ""    // openai-ish
-    case "google":     return "󰊭"    // google G
-    case "openrouter": return "󰀑"    // router-ish
-    case "openwork":   return "󱁐"    // cloud-ish
-    default:           return "󰨊"
+    case "anthropic":
+      return "" //  Claude / robot
+    case "openai":
+      return "" //  OpenAI
+    case "google":
+      return "" //  Google G
+    case "openrouter":
+      return "" //  router/cloud
+    case "openwork":
+      return "" //  cloud
+    default:
+      return "" //  generic
   }
 }

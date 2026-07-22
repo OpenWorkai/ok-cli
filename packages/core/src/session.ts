@@ -15,9 +15,9 @@
  */
 
 import { Agent } from "@earendil-works/pi-agent-core"
-import { getModel, streamSimple, getEnvApiKey } from "@earendil-works/pi-ai"
-import type { Model, Api } from "@earendil-works/pi-ai"
-import type { AgentTool } from "@earendil-works/pi-agent-core"
+import type { AgentOptions, AgentTool } from "@earendil-works/pi-agent-core"
+import { getEnvApiKey, getModel, streamSimple } from "@earendil-works/pi-ai"
+import type { Api, Model } from "@earendil-works/pi-ai"
 import type { SessionConfig } from "./types.ts"
 
 const SYSTEM_PROMPT = `You are ok-cli, an OpenWork agent. You help developers understand, modify, and improve codebases.
@@ -37,6 +37,8 @@ export interface OpenWorkSession {
   config: SessionConfig
 }
 
+export type SessionHooks = Pick<AgentOptions, "beforeToolCall">
+
 /**
  * Resolve a pi-ai Model for the given provider + model string.
  *
@@ -46,11 +48,7 @@ export interface OpenWorkSession {
  *               override baseUrl so pi-ai sends requests to the OpenWork backend.
  * - others:     passed straight through to getModel().
  */
-function resolveModel(
-  provider: string,
-  modelId: string,
-  baseUrl?: string
-): Model<Api> {
+function resolveModel(provider: string, modelId: string, baseUrl?: string): Model<Api> {
   if (provider === "openrouter") {
     // Use the openrouter/auto model as a template for API typing, then override
     // the id so the request targets the user-supplied model slug.
@@ -59,27 +57,38 @@ function resolveModel(
   }
 
   if (provider === "openwork") {
-    // OpenWork backend is OpenAI-compatible.
-    // Clone a known openai model for correct API typing, then override
-    // id and baseUrl so requests reach the OpenWork server.
-    const base = getModel("openai", "gpt-4o")
+    // OpenWork backend is OpenAI-compatible. Build directly with openai-completions
+    // so pi-ai routes through the right HTTP client (not azure-openai-responses).
     return {
-      ...base,
       id: modelId,
+      name: modelId,
+      api: "openai-completions",
       provider: "openai",
       baseUrl: baseUrl ?? "https://api.openwork.ai/v1",
-    } as Model<Api>
+      reasoning: false,
+      input: ["text"] as const,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      contextWindow: 131072,
+      maxTokens: 8192,
+    } as unknown as Model<Api>
   }
 
   if (provider === "nvidia") {
     // NVIDIA NIM is OpenAI-compatible (integrate.api.nvidia.com/v1).
-    const base = getModel("openai", "gpt-4o")
+    // Must use api: "openai-completions" — gpt-4o base has api: "azure-openai-responses"
+    // which routes to the wrong endpoint and returns 404.
     return {
-      ...base,
       id: modelId,
-      provider: "openai",
+      name: modelId,
+      api: "openai-completions",
+      provider: "nvidia",
       baseUrl: baseUrl ?? "https://integrate.api.nvidia.com/v1",
-    } as Model<Api>
+      reasoning: false,
+      input: ["text"] as const,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      contextWindow: 131072,
+      maxTokens: 4096,
+    } as unknown as Model<Api>
   }
 
   // Standard pi-ai provider
@@ -91,15 +100,12 @@ function resolveModel(
 
 export function createSession(
   config: SessionConfig,
-  tools: AgentTool<any>[] = []
+  tools: AgentTool[] = [],
+  hooks: SessionHooks = {}
 ): OpenWorkSession {
   const { model: modelConfig } = config
 
-  const model = resolveModel(
-    modelConfig.provider,
-    modelConfig.model,
-    modelConfig.baseUrl
-  )
+  const model = resolveModel(modelConfig.provider, modelConfig.model, modelConfig.baseUrl)
 
   const agent = new Agent({
     getApiKey: (provider: string) => {
@@ -109,11 +115,12 @@ export function createSession(
       if (modelConfig.provider === "openwork") return undefined
       // nvidia: read NVIDIA_API_KEY from env (routed as openai internally)
       if (modelConfig.provider === "nvidia") {
-        return process.env["NVIDIA_API_KEY"] ?? undefined
+        return process.env.NVIDIA_API_KEY ?? undefined
       }
       return getEnvApiKey(provider as Parameters<typeof getEnvApiKey>[0])
     },
     streamFn: (m, ctx, opts) => streamSimple(m, ctx, opts),
+    ...hooks,
     initialState: {
       systemPrompt: config.systemPrompt ?? SYSTEM_PROMPT,
       tools,

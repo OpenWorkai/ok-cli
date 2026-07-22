@@ -2,10 +2,11 @@
  * One-shot mode — run a task and stream output to stdout.
  */
 
-import chalk from "chalk"
+import type { AgentEvent, AgentTool } from "@earendil-works/pi-agent-core"
 import { createSession } from "@openwork/core"
 import { DEFAULT_TOOLS } from "@openwork/tools"
-import type { AgentEvent, AgentTool } from "@earendil-works/pi-agent-core"
+import chalk from "chalk"
+import { collectTrustedReadOnlyToolNames, createToolPermissionHook } from "./tool-permissions.ts"
 
 interface OneShotOptions {
   task: string
@@ -15,10 +16,24 @@ interface OneShotOptions {
   baseUrl?: string
   /** All tools (built-in + MCP). Defaults to DEFAULT_TOOLS if omitted. */
   tools?: AgentTool[]
+  /** Suppress banners — used when spawned as a sub-agent by /delegate. */
+  quiet?: boolean
+  /** Permit all tools. Defaults to safe, read-only tool access. */
+  allowAll?: boolean
+}
+
+export function createOneShotPermissionHook(tools: readonly AgentTool[], allowAll = false) {
+  return createToolPermissionHook({
+    getMode: () => (allowAll ? "allow-all" : "safe"),
+    trustedReadOnlyToolNames: collectTrustedReadOnlyToolNames(tools),
+    requestApproval: async () => false,
+  })
 }
 
 export async function runOneShot(opts: OneShotOptions): Promise<void> {
-  console.log(chalk.yellow("▶"), opts.task, "\n")
+  if (!opts.quiet) console.log(chalk.yellow("▶"), opts.task, "\n")
+
+  const tools = opts.tools ?? DEFAULT_TOOLS
 
   const { agent } = createSession(
     {
@@ -30,7 +45,8 @@ export async function runOneShot(opts: OneShotOptions): Promise<void> {
       },
       cwd: process.cwd(),
     },
-    opts.tools ?? DEFAULT_TOOLS
+    tools,
+    { beforeToolCall: createOneShotPermissionHook(tools, opts.allowAll) }
   )
 
   agent.subscribe(async (event: AgentEvent) => {
@@ -65,5 +81,5 @@ export async function runOneShot(opts: OneShotOptions): Promise<void> {
   })
 
   await agent.prompt(opts.task)
-  console.log(chalk.green("\n✓ Done"))
+  if (!opts.quiet) console.log(chalk.green("\n✓ Done"))
 }

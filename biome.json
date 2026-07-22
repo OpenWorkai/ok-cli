@@ -26,6 +26,17 @@
     }
   },
   "files": {
-    "ignore": ["node_modules", "dist", "*.lock"]
+    "ignore": [
+      "node_modules",
+      "dist",
+      "*.lock",
+      "*.tsbuildinfo",
+      ".agents",
+      ".codegraph",
+      ".ok-cli",
+      "01-plans",
+      "memory",
+      "tasks"
+    ]
   }
 }

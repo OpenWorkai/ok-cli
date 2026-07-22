@@ -1,4 +1,5 @@
 export * from "./bash.ts"
 export * from "./file.ts"
 export * from "./search.ts"
+export * from "./web.ts"
 export * from "./agent-tools.ts"

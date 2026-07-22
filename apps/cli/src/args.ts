@@ -22,16 +22,21 @@ export interface CliArgs {
   version: boolean
   help: boolean
   verbose: boolean
+  quiet: boolean
+  /** Explicitly permit mutating, shell, and MCP tools in one-shot mode. */
+  allowAll: boolean
 }
 
 export function parseArgs(argv: string[]): CliArgs {
   const args: CliArgs = {
     subCommand: null,
-    model: process.env["OPENWORK_MODEL"] ?? "claude-sonnet-4-6",
+    model: process.env.OPENWORK_MODEL ?? "claude-sonnet-4-6",
     provider: "anthropic",
     version: false,
     help: false,
     verbose: false,
+    quiet: false,
+    allowAll: false,
   }
 
   const positional: string[] = []
@@ -71,6 +76,13 @@ export function parseArgs(argv: string[]): CliArgs {
         break
       case "--verbose":
         args.verbose = true
+        break
+      case "--quiet":
+      case "-q":
+        args.quiet = true
+        break
+      case "--allow-all":
+        args.allowAll = true
         break
       case "--model":
       case "-m":

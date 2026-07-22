@@ -12,9 +12,9 @@
  */
 
 import type { AgentTool } from "@earendil-works/pi-agent-core"
-import { readMcpConfig } from "./config.ts"
-import { connectMcpServer } from "./client.ts"
 import { bridgeMcpTool } from "./bridge.ts"
+import { connectMcpServer } from "./client.ts"
+import { readMcpConfig } from "./config.ts"
 
 export * from "./config.ts"
 export * from "./client.ts"

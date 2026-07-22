@@ -6,14 +6,9 @@
  *   mcp test <n>         — connect and list tools live
  */
 
-import chalk from "chalk"
-import {
-  readMcpConfig,
-  writeMcpConfig,
-  emptyConfig,
-  MCP_CONFIG_PATH,
-} from "@openwork/mcp"
+import { MCP_CONFIG_PATH, emptyConfig, readMcpConfig, writeMcpConfig } from "@openwork/mcp"
 import { connectMcpServer } from "@openwork/mcp"
+import chalk from "chalk"
 
 export async function cmdMcp(argv: string[]): Promise<void> {
   const [sub, ...rest] = argv
@@ -52,9 +47,7 @@ async function cmdMcpList(): Promise<void> {
     console.log(
       chalk.gray("    ok-cli mcp add filesystem npx -y @modelcontextprotocol/server-filesystem ~/")
     )
-    console.log(
-      chalk.gray("    ok-cli mcp add github npx -y @modelcontextprotocol/server-github")
-    )
+    console.log(chalk.gray("    ok-cli mcp add github npx -y @modelcontextprotocol/server-github"))
     return
   }
 
@@ -88,7 +81,9 @@ async function cmdMcpAdd(argv: string[]): Promise<void> {
   const config = (await readMcpConfig()) ?? emptyConfig()
 
   if (config.mcpServers[name]) {
-    console.error(chalk.yellow(`⚠ Server "${name}" already exists. Remove it first: ok-cli mcp remove ${name}`))
+    console.error(
+      chalk.yellow(`⚠ Server "${name}" already exists. Remove it first: ok-cli mcp remove ${name}`)
+    )
     process.exit(1)
   }
 

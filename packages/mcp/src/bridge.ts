@@ -13,10 +13,9 @@
  * - isError → throw, so pi-agent-core marks the call as failed
  */
 
-import { Type } from "@sinclair/typebox"
-import type { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import type { Tool as McpTool } from "@modelcontextprotocol/sdk/types.js"
 import type { AgentTool } from "@earendil-works/pi-agent-core"
+import type { Client, Tool as McpTool } from "@modelcontextprotocol/client"
+import { Type } from "@sinclair/typebox"
 
 // pi-ai content types (Anthropic-shaped)
 type TextContent = { type: "text"; text: string }
@@ -26,11 +25,7 @@ type ImageContent = {
 }
 type AgentContent = TextContent | ImageContent
 
-export function bridgeMcpTool(
-  mcpTool: McpTool,
-  client: Client,
-  serverName: string
-): AgentTool {
+export function bridgeMcpTool(mcpTool: McpTool, client: Client, serverName: string): AgentTool {
   // Wrap the raw JSON Schema with TypeBox's escape hatch.
   // pi-agent-core will pass it through to the model as-is for tool declarations.
   const parameters = Type.Unsafe<Record<string, unknown>>(
@@ -60,8 +55,8 @@ export function bridgeMcpTool(
             type: "image",
             source: {
               type: "base64",
-              media_type: (block as any).mimeType ?? "image/png",
-              data: (block as any).data as string,
+              media_type: block.mimeType ?? "image/png",
+              data: block.data,
             },
           })
         } else {

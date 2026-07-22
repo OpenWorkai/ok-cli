@@ -2,6 +2,8 @@
  * Core types for OpenWork agent sessions.
  */
 
+export type PermissionMode = "safe" | "ask" | "allow-all"
+
 export type Provider =
   | "anthropic"
   | "openai"

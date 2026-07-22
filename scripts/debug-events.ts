@@ -4,12 +4,12 @@
  * see the exact event shape emitted by pi-agent-core.
  */
 
-import { createSession } from "@openwork/core"
-import { DEFAULT_TOOLS } from "@openwork/tools"
 import type { AgentEvent } from "@earendil-works/pi-agent-core"
+import { type Provider, createSession } from "@openwork/core"
+import { DEFAULT_TOOLS } from "@openwork/tools"
 
 const apiKey = process.env.ANTHROPIC_API_KEY
-const provider = "anthropic"
+const provider: Provider = "anthropic"
 // NVIDIA API via Anthropic-compatible endpoint uses its own model names
 const model = process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001"
 
@@ -17,11 +17,13 @@ if (!apiKey) {
   console.error("Set ANTHROPIC_API_KEY (and optionally ANTHROPIC_BASE_URL + ANTHROPIC_MODEL)")
   process.exit(1)
 }
-console.log(`Using provider=${provider} model=${model} baseUrl=${process.env.ANTHROPIC_BASE_URL ?? "default"}`)
+console.log(
+  `Using provider=${provider} model=${model} baseUrl=${process.env.ANTHROPIC_BASE_URL ?? "default"}`
+)
 
 const { agent } = createSession(
   {
-    model: { provider: provider as any, model, apiKey },
+    model: { provider, model, apiKey },
     cwd: process.cwd(),
   },
   DEFAULT_TOOLS

@@ -9,8 +9,8 @@
  *   bun run build          (via root package.json)
  */
 
+import { mkdir, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { writeFile, rm, mkdir } from "node:fs/promises"
 
 const ROOT = join(import.meta.dir, "..")
 const ENTRY = join(ROOT, "apps/cli/src/index.ts")
@@ -29,7 +29,7 @@ const result = await Bun.build({
   minify: false, // keep readable for debugging
   sourcemap: "none",
   naming: "index.js",
-  external: [],   // bundle everything — no runtime deps needed
+  external: [], // bundle everything — no runtime deps needed
 })
 
 if (!result.success) {

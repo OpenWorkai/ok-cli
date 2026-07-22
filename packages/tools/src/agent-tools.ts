@@ -3,11 +3,12 @@
  * Each tool wraps the raw functions with TypeBox schemas.
  */
 
-import { Type } from "@sinclair/typebox"
 import type { AgentTool } from "@earendil-works/pi-agent-core"
+import { Type } from "@sinclair/typebox"
 import { runBash } from "./bash.ts"
-import { readFileTool, writeFileTool, listDir } from "./file.ts"
+import { listDir, readFileTool, writeFileTool } from "./file.ts"
 import { grepSearch } from "./search.ts"
+import { webCrawl, webParse, webScrape, webSearch } from "./web.ts"
 
 // ─── bash ────────────────────────────────────────────────────────────────────
 
@@ -114,12 +115,92 @@ export const searchTool: AgentTool<typeof SearchParams> = {
   },
 }
 
+// ─── web_scrape ──────────────────────────────────────────────────────────────
+
+const WebScrapeParams = Type.Object({
+  urls: Type.Array(Type.String(), { description: "One or more URLs to scrape" }),
+  onlyMainContent: Type.Optional(
+    Type.Boolean({ description: "Strip nav/footer boilerplate (default: true)" })
+  ),
+})
+
+export const webScrapeTool: AgentTool<typeof WebScrapeParams> = {
+  name: "web_scrape",
+  label: "Web Scrape",
+  description:
+    "Fetch one or more web pages and return clean markdown. Handles JS-rendered pages and anti-bot protection via firecrawl.",
+  parameters: WebScrapeParams,
+  execute: async (_id, params) => {
+    const text = await webScrape(params)
+    return { content: [{ type: "text" as const, text }], details: {} }
+  },
+}
+
+// ─── web_search ──────────────────────────────────────────────────────────────
+
+const WebSearchParams = Type.Object({
+  query: Type.String({ description: "Search query" }),
+  limit: Type.Optional(Type.Number({ description: "Max results (default: 5)" })),
+})
+
+export const webSearchTool: AgentTool<typeof WebSearchParams> = {
+  name: "web_search",
+  label: "Web Search",
+  description: "Search the web and return results with titles, URLs, and snippets.",
+  parameters: WebSearchParams,
+  execute: async (_id, params) => {
+    const text = await webSearch(params)
+    return { content: [{ type: "text" as const, text }], details: {} }
+  },
+}
+
+// ─── web_parse ───────────────────────────────────────────────────────────────
+
+const WebParseParams = Type.Object({
+  path: Type.String({ description: "Local file path (PDF, DOCX, HTML, XLSX, etc.)" }),
+})
+
+export const webParseTool: AgentTool<typeof WebParseParams> = {
+  name: "web_parse",
+  label: "Parse File",
+  description: "Parse a local file (PDF, DOCX, HTML, XLSX) into clean markdown using firecrawl.",
+  parameters: WebParseParams,
+  execute: async (_id, params) => {
+    const text = await webParse(params)
+    return { content: [{ type: "text" as const, text }], details: {} }
+  },
+}
+
+// ─── web_crawl ───────────────────────────────────────────────────────────────
+
+const WebCrawlParams = Type.Object({
+  url: Type.String({ description: "Root URL to crawl" }),
+  limit: Type.Optional(Type.Number({ description: "Max pages to crawl" })),
+  depth: Type.Optional(Type.Number({ description: "Max crawl depth" })),
+})
+
+export const webCrawlTool: AgentTool<typeof WebCrawlParams> = {
+  name: "web_crawl",
+  label: "Web Crawl",
+  description:
+    "Crawl an entire site starting from a root URL. Returns all discovered pages as markdown. Timeout: 2 min.",
+  parameters: WebCrawlParams,
+  execute: async (_id, params) => {
+    const text = await webCrawl(params)
+    return { content: [{ type: "text" as const, text }], details: {} }
+  },
+}
+
 // ─── default tool set ────────────────────────────────────────────────────────
 
-export const DEFAULT_TOOLS: AgentTool<any>[] = [
+export const DEFAULT_TOOLS: AgentTool[] = [
   bashTool,
   readFileTool_,
   writeFileTool_,
   listDirTool,
   searchTool,
+  webScrapeTool,
+  webSearchTool,
+  webParseTool,
+  webCrawlTool,
 ]

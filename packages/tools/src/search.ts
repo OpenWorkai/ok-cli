@@ -3,7 +3,7 @@
  * Thin wrapper; real power comes from ripgrep if available.
  */
 
-import { runBash } from "./bash.ts"
+import { runProcess } from "./bash.ts"
 
 export interface SearchInput {
   pattern: string
@@ -15,14 +15,31 @@ export interface SearchInput {
 
 export async function grepSearch(input: SearchInput): Promise<string> {
   const dir = input.dir ?? "."
-  const glob = input.fileGlob ? `--glob '${input.fileGlob}'` : ""
-  const caseFlag = input.caseSensitive ? "" : "-i"
-  const max = input.maxResults ? `| head -${input.maxResults}` : ""
+  const caseArgs = input.caseSensitive ? [] : ["-i"]
+  const rgPath = Bun.which("rg")
+  let result: Awaited<ReturnType<typeof runProcess>> | undefined
 
-  // prefer rg, fall back to grep
-  const rgCmd = `rg ${caseFlag} --line-number ${glob} '${input.pattern}' ${dir} ${max} 2>/dev/null`
-  const grepCmd = `grep -rn ${caseFlag} '${input.pattern}' ${dir} ${max} 2>/dev/null`
+  if (rgPath) {
+    const globArgs = input.fileGlob ? ["--glob", input.fileGlob] : []
+    result = await runProcess({
+      command: [rgPath, ...caseArgs, "--line-number", ...globArgs, "--", input.pattern, "."],
+      cwd: dir,
+    })
+  }
 
-  const rg = await runBash({ command: `command -v rg && ${rgCmd} || ${grepCmd}`, cwd: dir })
-  return rg.stdout || "(no results)"
+  if (!result || result.exitCode > 1) {
+    const grepPath = Bun.which("grep") ?? "grep"
+    result = await runProcess({
+      command: [grepPath, "-rn", ...caseArgs, "--", input.pattern, "."],
+      cwd: dir,
+    })
+  }
+
+  const output = limitResults(result.stdout, input.maxResults)
+  return output || "(no results)"
+}
+
+function limitResults(output: string, maxResults?: number): string {
+  if (!maxResults || maxResults < 1) return output
+  return output.split("\n").slice(0, Math.floor(maxResults)).join("\n")
 }

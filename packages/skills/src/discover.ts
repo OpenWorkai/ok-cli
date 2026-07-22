@@ -15,9 +15,9 @@
  *   - Directories with a SKILL.md inside (Claude/Codex-compatible)
  */
 
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs"
-import { join } from "node:path"
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs"
 import { homedir } from "node:os"
+import { join } from "node:path"
 import { parseSkillFile } from "./parser.ts"
 import type { Skill } from "./types.ts"
 
@@ -26,10 +26,14 @@ type Scope = Skill["scope"]
 /** Returns the path to a scope's root directory. */
 export function scopeDir(scope: Scope, cwd = process.cwd()): string {
   switch (scope) {
-    case "local":  return join(cwd, ".ok-cli", "skills")
-    case "global": return join(homedir(), ".config", "ok-cli", "skills")
-    case "claude": return join(homedir(), ".claude", "skills")
-    case "codex":  return join(homedir(), ".codex", "skills")
+    case "local":
+      return join(cwd, ".ok-cli", "skills")
+    case "global":
+      return join(homedir(), ".config", "ok-cli", "skills")
+    case "claude":
+      return join(homedir(), ".claude", "skills")
+    case "codex":
+      return join(homedir(), ".codex", "skills")
   }
 }
 

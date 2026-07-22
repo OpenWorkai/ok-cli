@@ -2,16 +2,16 @@
  * ok-cli auth commands: login, logout, whoami
  */
 
-import chalk from "chalk"
-import * as readline from "readline"
+import * as readline from "node:readline"
 import {
-  readAuth,
-  writeAuth,
-  clearAuth,
-  verifyToken,
-  isTokenExpired,
   DEFAULT_SERVER,
+  clearAuth,
+  isTokenExpired,
+  readAuth,
+  verifyToken,
+  writeAuth,
 } from "@openwork/cloud"
+import chalk from "chalk"
 
 // ── login ─────────────────────────────────────────────────────────────────────
 
@@ -73,7 +73,7 @@ export async function cmdLogin(opts: LoginOptions): Promise<void> {
   console.log(chalk.bold.green("\n✓ Logged in to OpenWork Cloud"))
   if (email) console.log(chalk.gray(`  as ${email}`))
   console.log(chalk.gray(`  server: ${server}`))
-  console.log(chalk.gray("\nYou can now run: ok-cli --provider openwork \"your task\"\n"))
+  console.log(chalk.gray('\nYou can now run: ok-cli --provider openwork "your task"\n'))
 }
 
 // ── logout ────────────────────────────────────────────────────────────────────

@@ -5,9 +5,9 @@
  * so users can copy-paste existing configs.
  */
 
-import { homedir } from "os"
-import { join } from "path"
-import { readFile, writeFile, mkdir } from "fs/promises"
+import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { homedir } from "node:os"
+import { join } from "node:path"
 
 export const MCP_CONFIG_PATH = join(homedir(), ".config", "ok-cli", "mcp.json")
 
@@ -50,7 +50,7 @@ export async function readMcpConfig(): Promise<McpConfig | null> {
 
 export async function writeMcpConfig(config: McpConfig): Promise<void> {
   await mkdir(join(homedir(), ".config", "ok-cli"), { recursive: true })
-  await writeFile(MCP_CONFIG_PATH, JSON.stringify(config, null, 2) + "\n", "utf8")
+  await writeFile(MCP_CONFIG_PATH, `${JSON.stringify(config, null, 2)}\n`, "utf8")
 }
 
 export function emptyConfig(): McpConfig {

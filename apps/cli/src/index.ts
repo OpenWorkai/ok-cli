@@ -15,17 +15,17 @@
  */
 
 import "dotenv/config" // load .env from cwd (or parent dirs) before anything else
-import chalk from "chalk"
-import { parseArgs } from "./args.ts"
-import { runInteractive } from "./interactive.ts"
-import { runOneShot } from "./one-shot.ts"
-import { cmdLogin, cmdLogout, cmdWhoami } from "./auth-commands.ts"
-import { cmdMcp } from "./mcp-commands.ts"
-import { cmdSkill } from "./skill-commands.ts"
 import { readAuth } from "@openwork/cloud"
 import { loadMcpTools } from "@openwork/mcp"
 import { discoverSkills } from "@openwork/skills"
 import { DEFAULT_TOOLS } from "@openwork/tools"
+import chalk from "chalk"
+import { parseArgs } from "./args.ts"
+import { cmdLogin, cmdLogout, cmdWhoami } from "./auth-commands.ts"
+import { runInteractive } from "./interactive.ts"
+import { cmdMcp } from "./mcp-commands.ts"
+import { runOneShot } from "./one-shot.ts"
+import { cmdSkill } from "./skill-commands.ts"
 
 const VERSION = "0.1.0"
 
@@ -91,13 +91,23 @@ async function main() {
 
   // ── one-shot: keep a simple text banner ────────────────────────────────────
   if (args.task) {
-    const providerLabel = provider === "openwork" ? chalk.magenta("openwork") : chalk.gray(provider)
-    console.log(
-      chalk.bold.cyan("⚡ ok-cli") +
-      chalk.gray(` v${VERSION}  model: ${model}  provider: `) +
-      providerLabel + "\n"
-    )
-    await runOneShot({ task: args.task, model, provider, apiKey, baseUrl, tools: allTools })
+    if (!args.quiet) {
+      const providerLabel =
+        provider === "openwork" ? chalk.magenta("openwork") : chalk.gray(provider)
+      console.log(
+        `${chalk.bold.cyan("⚡ ok-cli")}${chalk.gray(` v${VERSION}  model: ${model}  provider: `)}${providerLabel}\n`
+      )
+    }
+    await runOneShot({
+      task: args.task,
+      model,
+      provider,
+      apiKey,
+      baseUrl,
+      tools: allTools,
+      quiet: args.quiet,
+      allowAll: args.allowAll,
+    })
   } else {
     // Interactive: statusline handles the banner
     await runInteractive({
@@ -125,6 +135,7 @@ ${chalk.bold("Usage:")}
   ok-cli "<task>"                     Run one-shot task
   ok-cli --model <id>                 Override model (default: claude-sonnet-4-6)
   ok-cli --provider <name>            Provider (see below)
+  ok-cli --allow-all "<task>"          Permit mutating tools in one-shot mode
   ok-cli login [--token <t>]          Sign in to OpenWork Cloud
   ok-cli logout                       Clear saved credentials
   ok-cli whoami                       Show current login status
@@ -135,6 +146,7 @@ ${chalk.bold("Usage:")}
   ok-cli skill list                   List all skills (claude/codex/ok-cli)
   ok-cli skill show <name>            Show a skill's content
   ok-cli skill new <name>             Create a new skill file
+  ok-cli skill find [query]           Search skills.sh registry
   ok-cli --version                    Show version
   ok-cli --help                       Show this help
 

@@ -5,10 +5,8 @@
  * Connection lifecycle: connect → listTools → use → close.
  */
 
-import { Client } from "@modelcontextprotocol/sdk/client/index.js"
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
-import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
-import type { Tool as McpTool } from "@modelcontextprotocol/sdk/types.js"
+import { Client, type Tool as McpTool, SSEClientTransport } from "@modelcontextprotocol/client"
+import { StdioClientTransport } from "@modelcontextprotocol/client/stdio"
 import { isStdioConfig } from "./config.ts"
 import type { McpServerConfig } from "./config.ts"
 
@@ -31,10 +29,7 @@ export async function connectMcpServer(
   name: string,
   config: McpServerConfig
 ): Promise<McpConnection> {
-  const client = new Client(
-    { name: "ok-cli", version: "0.1.0" },
-    { capabilities: { tools: {} } }
-  )
+  const client = new Client({ name: "ok-cli", version: "0.1.0" }, { capabilities: { tools: {} } })
 
   let transport: StdioClientTransport | SSEClientTransport
 
@@ -43,9 +38,7 @@ export async function connectMcpServer(
       command: config.command,
       args: config.args ?? [],
       // Merge caller-supplied env into the current process environment
-      env: config.env
-        ? { ...(process.env as Record<string, string>), ...config.env }
-        : undefined,
+      env: config.env ? { ...(process.env as Record<string, string>), ...config.env } : undefined,
       cwd: config.cwd,
     })
   } else {

@@ -11,7 +11,7 @@
  *   - Codex SKILL.md format
  */
 
-import { basename } from "path"
+import { basename } from "node:path"
 import type { Skill } from "./types.ts"
 
 type Scope = Skill["scope"]
@@ -23,48 +23,45 @@ type Scope = Skill["scope"]
  * @param filePath  Absolute path (used for name fallback and metadata)
  * @param scope     "global" | "local" | "claude" | "codex"
  */
-export function parseSkillFile(
-  content: string,
-  filePath: string,
-  scope: Scope
-): Skill {
+export function parseSkillFile(content: string, filePath: string, scope: Scope): Skill {
   const frontmatterMatch = content.match(/^\s*---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/m)
 
   let meta: Record<string, string> = {}
   let body: string
 
   if (frontmatterMatch) {
-    meta = parseFlatYaml(frontmatterMatch[1]!)
-    body = frontmatterMatch[2]!.trim()
+    const [, frontmatter = "", matchedBody = ""] = frontmatterMatch
+    meta = parseFlatYaml(frontmatter)
+    body = matchedBody.trim()
   } else {
     body = content.trim()
   }
 
   // Name: frontmatter > filename without extension > directory name
   // For SKILL.md files the filename is always "SKILL.md", so we use the parent directory name
-  const fileName = basename(filePath)
+  const normalizedPath = filePath.replace(/\\/g, "/")
+  const fileName = basename(normalizedPath)
   let defaultName: string
   if (fileName.toUpperCase() === "SKILL.MD") {
     // Parent directory name is the skill name
-    const parts = filePath.replace(/\\/g, "/").split("/")
+    const parts = normalizedPath.split("/")
     defaultName = parts[parts.length - 2] ?? "unknown"
   } else {
     defaultName = fileName.replace(/\.(md|txt|skill)$/i, "")
   }
 
-  const name = meta["name"] ?? defaultName
+  const name = meta.name ?? defaultName
 
   // user_invocable: default true; false hides from /skills listing
-  const userInvocableRaw = meta["user_invocable"]
-  const userInvocable = userInvocableRaw === undefined
-    ? true
-    : userInvocableRaw.toLowerCase() !== "false"
+  const userInvocableRaw = meta.user_invocable
+  const userInvocable =
+    userInvocableRaw === undefined ? true : userInvocableRaw.toLowerCase() !== "false"
 
   return {
     name,
-    description: meta["description"] || undefined,
-    model: meta["model"] || undefined,
-    system: meta["system"] || undefined,
+    description: meta.description || undefined,
+    model: meta.model || undefined,
+    system: meta.system || undefined,
     filePath,
     scope,
     userInvocable,

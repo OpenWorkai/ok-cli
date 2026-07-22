@@ -4,9 +4,9 @@
  * Token file: ~/.config/ok-cli/auth.json
  */
 
-import { homedir } from "os"
-import { join } from "path"
-import { mkdir, readFile, writeFile, unlink } from "fs/promises"
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises"
+import { homedir } from "node:os"
+import { join } from "node:path"
 
 const CONFIG_DIR = join(homedir(), ".config", "ok-cli")
 const AUTH_FILE = join(CONFIG_DIR, "auth.json")
@@ -38,7 +38,7 @@ export async function readAuth(): Promise<AuthData | null> {
 /** Persist auth data to disk. */
 export async function writeAuth(data: AuthData): Promise<void> {
   await mkdir(CONFIG_DIR, { recursive: true })
-  await writeFile(AUTH_FILE, JSON.stringify(data, null, 2) + "\n", "utf8")
+  await writeFile(AUTH_FILE, `${JSON.stringify(data, null, 2)}\n`, "utf8")
 }
 
 /** Delete saved auth data. Returns true if a file was removed. */
