@@ -24,7 +24,7 @@ import { parseArgs } from "./args.ts"
 import { cmdLogin, cmdLogout, cmdWhoami } from "./auth-commands.ts"
 import { runInteractive } from "./interactive.ts"
 import { cmdMcp } from "./mcp-commands.ts"
-import { runOneShot } from "./one-shot.ts"
+import { OneShotApiError, runOneShot } from "./one-shot.ts"
 import { cmdSkill } from "./skill-commands.ts"
 
 const VERSION = "0.1.0"
@@ -89,41 +89,43 @@ async function main() {
   // ── load skills ──────────────────────────────────────────────────────────────
   const skills = discoverSkills()
 
-  // ── one-shot: keep a simple text banner ────────────────────────────────────
-  if (args.task) {
-    if (!args.quiet) {
-      const providerLabel =
-        provider === "openwork" ? chalk.magenta("openwork") : chalk.gray(provider)
-      console.log(
-        `${chalk.bold.cyan("⚡ ok-cli")}${chalk.gray(` v${VERSION}  model: ${model}  provider: `)}${providerLabel}\n`
-      )
+  try {
+    // ── one-shot: keep a simple text banner ──────────────────────────────────
+    if (args.task) {
+      if (!args.quiet) {
+        const providerLabel =
+          provider === "openwork" ? chalk.magenta("openwork") : chalk.gray(provider)
+        console.log(
+          `${chalk.bold.cyan("⚡ ok-cli")}${chalk.gray(` v${VERSION}  model: ${model}  provider: `)}${providerLabel}\n`
+        )
+      }
+      await runOneShot({
+        task: args.task,
+        model,
+        provider,
+        apiKey,
+        baseUrl,
+        tools: allTools,
+        quiet: args.quiet,
+        allowAll: args.allowAll,
+      })
+    } else {
+      // Interactive: statusline handles the banner
+      await runInteractive({
+        model,
+        provider,
+        apiKey,
+        baseUrl,
+        version: VERSION,
+        tools: allTools,
+        skills,
+        mcpServerCount: mcp.serverCount,
+      })
     }
-    await runOneShot({
-      task: args.task,
-      model,
-      provider,
-      apiKey,
-      baseUrl,
-      tools: allTools,
-      quiet: args.quiet,
-      allowAll: args.allowAll,
-    })
-  } else {
-    // Interactive: statusline handles the banner
-    await runInteractive({
-      model,
-      provider,
-      apiKey,
-      baseUrl,
-      version: VERSION,
-      tools: allTools,
-      skills,
-      mcpServerCount: mcp.serverCount,
-    })
+  } finally {
+    // Disconnect MCP servers on both successful and failed runs.
+    await mcp.close()
   }
-
-  // Disconnect MCP servers on exit
-  await mcp.close()
 }
 
 function printHelp() {
@@ -178,6 +180,6 @@ ${chalk.bold("Environment:")}
 }
 
 main().catch((err: unknown) => {
-  console.error(chalk.red("Error:"), err)
+  if (!(err instanceof OneShotApiError)) console.error(chalk.red("Error:"), err)
   process.exit(1)
 })

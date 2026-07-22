@@ -22,6 +22,10 @@ interface OneShotOptions {
   allowAll?: boolean
 }
 
+export class OneShotApiError extends Error {
+  override name = "OneShotApiError"
+}
+
 export function createOneShotPermissionHook(tools: readonly AgentTool[], allowAll = false) {
   return createToolPermissionHook({
     getMode: () => (allowAll ? "allow-all" : "safe"),
@@ -49,6 +53,8 @@ export async function runOneShot(opts: OneShotOptions): Promise<void> {
     { beforeToolCall: createOneShotPermissionHook(tools, opts.allowAll) }
   )
 
+  let apiError: OneShotApiError | undefined
+
   agent.subscribe(async (event: AgentEvent) => {
     switch (event.type) {
       case "message_update": {
@@ -61,8 +67,10 @@ export async function runOneShot(opts: OneShotOptions): Promise<void> {
       case "message_end": {
         // Surface API errors (auth failures, rate limits, etc.)
         const msg = event.message as { stopReason?: string; errorMessage?: string }
-        if (msg.stopReason === "error" && msg.errorMessage) {
-          process.stderr.write(chalk.red(`\n[API Error] ${msg.errorMessage}\n`))
+        if (msg.stopReason === "error") {
+          const errorMessage = msg.errorMessage?.trim() || "The model request failed."
+          apiError = new OneShotApiError(errorMessage)
+          process.stderr.write(chalk.red(`\n[API Error] ${errorMessage}\n`))
         }
         break
       }
@@ -81,5 +89,6 @@ export async function runOneShot(opts: OneShotOptions): Promise<void> {
   })
 
   await agent.prompt(opts.task)
+  if (apiError) throw apiError
   if (!opts.quiet) console.log(chalk.green("\n✓ Done"))
 }
