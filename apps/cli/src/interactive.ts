@@ -359,6 +359,35 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
     return undefined
   })
 
+  // ── Permission mode helpers (shared by /mode and Shift+Tab) ───────────────
+  const applyPermissionMode = (mode: PermissionMode) => {
+    permissionMode = mode
+    if (mode === "allow-all") {
+      Reflect.deleteProperty(statusInfo, "mode")
+    } else {
+      statusInfo.mode = mode
+    }
+    const modeColor =
+      mode === "safe" ? M.green : mode === "ask" ? M.yellow : M.subtext
+    history.addChild(new Text(`  mode: ${chalk.hex(modeColor)(mode)}`, 1, 0))
+    tui.requestRender()
+  }
+
+  const cyclePermissionMode = () => {
+    const nextMode = MODE_CYCLE[(MODE_CYCLE.indexOf(permissionMode) + 1) % MODE_CYCLE.length]
+    applyPermissionMode((nextMode ?? permissionMode) as PermissionMode)
+  }
+
+  // Shift+Tab cycles the permission mode (mirrors Claude Code's bypass toggle).
+  // Legacy terminal: ESC[Z ; Kitty protocol (CSI-u): ESC[1;2I
+  tui.addInputListener((data) => {
+    if (data === "\x1b[Z" || data === "\x1b[1;2I") {
+      cyclePermissionMode()
+      return { consume: true }
+    }
+    return undefined
+  })
+
   // ── Editor submit ──────────────────────────────────────────────────────────
   editor.onSubmit = async (rawInput) => {
     const input = rawInput.trim()
@@ -571,20 +600,10 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
     if (input.startsWith("/mode")) {
       const arg = input.slice("/mode".length).trim() as PermissionMode | ""
       if (arg === "safe" || arg === "ask" || arg === "allow-all") {
-        permissionMode = arg
+        applyPermissionMode(arg)
       } else {
-        const nextMode = MODE_CYCLE[(MODE_CYCLE.indexOf(permissionMode) + 1) % MODE_CYCLE.length]
-        if (nextMode) permissionMode = nextMode
+        cyclePermissionMode()
       }
-      if (permissionMode === "allow-all") {
-        Reflect.deleteProperty(statusInfo, "mode")
-      } else {
-        statusInfo.mode = permissionMode
-      }
-      const modeColor =
-        permissionMode === "safe" ? M.green : permissionMode === "ask" ? M.yellow : M.subtext
-      history.addChild(new Text(`  mode: ${chalk.hex(modeColor)(permissionMode)}`, 1, 0))
-      tui.requestRender()
       return
     }
 
