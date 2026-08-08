@@ -23,6 +23,9 @@
         "@openwork/cloud": "workspace:*",
         "@openwork/core": "workspace:*",
         "@openwork/mcp": "workspace:*",
+        "@openwork/peer": "workspace:*",
+        "@openwork/peer-rlm": "workspace:*",
+        "@openwork/rlm": "workspace:*",
         "@openwork/session-store": "workspace:*",
         "@openwork/skills": "workspace:*",
         "@openwork/tools": "workspace:*",
@@ -66,6 +69,30 @@
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5.8.2",
+      },
+    },
+    "packages/peer": {
+      "name": "@openwork/peer",
+      "version": "0.1.0",
+      "dependencies": {
+        "@sinclair/typebox": "^0.34.6",
+        "nanoid": "^5.0.0",
+      },
+    },
+    "packages/peer-rlm": {
+      "name": "@openwork/peer-rlm",
+      "version": "0.1.0",
+      "dependencies": {
+        "@openwork/peer": "workspace:*",
+        "@openwork/rlm": "workspace:*",
+      },
+    },
+    "packages/rlm": {
+      "name": "@openwork/rlm",
+      "version": "0.1.0",
+      "dependencies": {
+        "@sinclair/typebox": "^0.34.6",
+        "nanoid": "^5.0.0",
       },
     },
     "packages/session-store": {
@@ -200,6 +227,12 @@
 
     "@openwork/mcp": ["@openwork/mcp@workspace:packages/mcp"],
 
+    "@openwork/peer": ["@openwork/peer@workspace:packages/peer"],
+
+    "@openwork/peer-rlm": ["@openwork/peer-rlm@workspace:packages/peer-rlm"],
+
+    "@openwork/rlm": ["@openwork/rlm@workspace:packages/rlm"],
+
     "@openwork/session-store": ["@openwork/session-store@workspace:packages/session-store"],
 
     "@openwork/skills": ["@openwork/skills@workspace:packages/skills"],
@@ -323,6 +356,8 @@
     "marked": ["marked@15.0.12", "", { "bin": { "marked": "bin/marked.js" } }, "sha512-8dD6FusOQSrpv9Z1rdNMdlSgQOIP880DHqnohobOmYLElGEqAL/JvxvuxZO16r4HtjTlfPRDC1hbvxC9dPN2nA=="],
 
     "ms": ["ms@2.1.3", "", {}, "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA=="],
+
+    "nanoid": ["nanoid@5.1.16", "", { "bin": { "nanoid": "bin/nanoid.js" } }, "sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ=="],
 
     "node-domexception": ["node-domexception@1.0.0", "", {}, "sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ=="],
 

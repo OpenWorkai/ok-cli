@@ -27,6 +27,10 @@ export interface CliArgs {
   quiet: boolean
   /** Explicitly permit mutating, shell, and MCP tools in one-shot mode. */
   allowAll: boolean
+  /** Enable peer-to-peer session communication */
+  peerEnable: boolean
+  /** Enable RLM (recursive task decomposition) */
+  rlmEnable: boolean
 }
 
 export function parseArgs(argv: string[]): CliArgs {
@@ -40,6 +44,8 @@ export function parseArgs(argv: string[]): CliArgs {
     verbose: false,
     quiet: false,
     allowAll: false,
+    peerEnable: false,
+    rlmEnable: false,
   }
 
   const positional: string[] = []
@@ -86,6 +92,12 @@ export function parseArgs(argv: string[]): CliArgs {
         break
       case "--allow-all":
         args.allowAll = true
+        break
+      case "--peer-enable":
+        args.peerEnable = true
+        break
+      case "--rlm-enable":
+        args.rlmEnable = true
         break
       case "--mode": {
         const mode = argv[++i]

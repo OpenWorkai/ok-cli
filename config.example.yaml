@@ -1,0 +1,18 @@
+# ok-cli configuration file
+#
+# Location: ~/.config/ok-cli/config.yaml
+#
+# This file is optional. All settings can be overridden via CLI flags.
+
+# Peer-to-peer session communication
+peer:
+  enabled: false
+  alias: "main"  # Human-readable session alias
+
+# RLM (Recursive Language Model) task decomposition
+rlm:
+  enabled: false
+  maxDepth: 3           # Maximum recursion depth
+  maxBudget: 10000      # Maximum token budget
+  maxBranches: 3        # Maximum branches per node
+  toolsProfile: "full"  # full | read-only | safe

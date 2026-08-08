@@ -1,0 +1,12 @@
+{
+  "name": "@openwork/rlm",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.6",
+    "nanoid": "^5.0.0"
+  }
+}
