@@ -162,11 +162,11 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   tui.addChild(history)
 
   // ── Startup banner (Claude Code style) ────────────────────────────────────
-  // Custom ASCII art speech bubble icon (3 lines, matching Claude Code's robot height)
+  // Speech bubble with black dot inside (green outline, black center)
   const okIcon = [
-    chalk.hex(M.green)(" ●● "),
-    chalk.hex(M.green)("●  ●"),
-    chalk.hex(M.green)(" ▀▀ "),
+    chalk.hex(M.green)("┌─┐"),
+    chalk.hex(M.green)("│") + chalk.hex("#000000")("●") + chalk.hex(M.green)("│"),
+    chalk.hex(M.green)("└─┘"),
   ]
   const banner = [
     "",
