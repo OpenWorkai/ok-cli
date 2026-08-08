@@ -17,9 +17,11 @@
 import "dotenv/config" // load .env from cwd (or parent dirs) before anything else
 import { readAuth } from "@openwork/cloud"
 import { loadMcpTools } from "@openwork/mcp"
+import { ALL_TOOLS as PEER_RLM_TOOLS } from "@openwork/peer-rlm"
 import { discoverSkills } from "@openwork/skills"
 import { DEFAULT_TOOLS } from "@openwork/tools"
 import chalk from "chalk"
+import { loadConfig } from "./config/loader.ts"
 import { parseArgs } from "./args.ts"
 import { cmdLogin, cmdLogout, cmdWhoami } from "./auth-commands.ts"
 import { runInteractive } from "./interactive.ts"
@@ -32,6 +34,11 @@ const VERSION = "0.1.0"
 
 async function main() {
   const args = parseArgs(process.argv.slice(2))
+  const config = loadConfig()
+
+  // Merge config with CLI args (CLI args take precedence)
+  const peerEnabled = args.peerEnable || config.peer?.enabled || false
+  const rlmEnabled = args.rlmEnable || config.rlm?.enabled || false
 
   // ── auth subcommands ────────────────────────────────────────────────────────
   if (args.subCommand === "login") {
@@ -85,7 +92,15 @@ async function main() {
 
   // ── load MCP tools ──────────────────────────────────────────────────────────
   const mcp = await loadMcpTools({ verbose: args.verbose })
-  const allTools = [...DEFAULT_TOOLS, ...mcp.tools]
+  let allTools = [...DEFAULT_TOOLS, ...mcp.tools]
+
+  // ── load peer-rlm tools if enabled ──────────────────────────────────────────
+  if (peerEnabled || rlmEnabled) {
+    allTools = [...allTools, ...PEER_RLM_TOOLS]
+    if (args.verbose) {
+      console.log(chalk.gray(`✓ Loaded peer-rlm tools (peer: ${peerEnabled}, rlm: ${rlmEnabled})`))
+    }
+  }
 
   // ── load skills ──────────────────────────────────────────────────────────────
   const skills = discoverSkills()
@@ -152,6 +167,8 @@ ${chalk.bold("Usage:")}
   ok-cli --model <id>                 Override model (default: claude-sonnet-4-6)
   ok-cli --provider <name>            Provider (see below)
   ok-cli --allow-all "<task>"          Permit mutating tools in one-shot mode
+  ok-cli --peer-enable                Enable peer-to-peer session communication
+  ok-cli --rlm-enable                 Enable RLM (recursive task decomposition)
   ok-cli login [--token <t>]          Sign in to OpenWork Cloud
   ok-cli logout                       Clear saved credentials
   ok-cli whoami                       Show current login status
