@@ -90,6 +90,7 @@ const M = {
   yellow: "#f9e2af",
   red: "#f38ba8",
   mauve: "#cba6f7",
+  peach: "#fab387",
   overlay: "#585b70",
   surface: "#313244",
 }
