@@ -207,6 +207,8 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
 
   // ── Footer statusline ─────────────────────────────────────────────────────
   const footer = new Container()
+  let footerText: Text | null = null
+  
   const renderFooter = () => {
     const modeIcon = permissionMode === "allow-all" ? "⚡" : "🔒"
     const modeText =
@@ -222,8 +224,11 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
       chalk.hex(M.subtext)("· /help for commands"),
     ].join(" ")
 
-    footer.removeChildren()
-    footer.addChild(new Text(chalk.hex(M.overlay)(`  ${hints}`), 0, 0))
+    if (footerText) {
+      footer.removeChild(footerText)
+    }
+    footerText = new Text(chalk.hex(M.overlay)(`  ${hints}`), 0, 0)
+    footer.addChild(footerText)
   }
   renderFooter()
   tui.addChild(footer)
