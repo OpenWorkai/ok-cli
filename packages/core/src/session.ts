@@ -110,6 +110,24 @@ function resolveModel(provider: string, modelId: string, baseUrl?: string): Mode
     } as unknown as Model<Api>
   }
 
+  if (provider === "deepseek") {
+    // DeepSeek is OpenAI-compatible (api.deepseek.com). Route through
+    // openai-completions and resolve the key via DEEPSEEK_API_KEY
+    // (getEnvApiKey("deepseek")) — no --base-url needed anymore.
+    return {
+      id: modelId,
+      name: modelId,
+      api: "openai-completions",
+      provider: "deepseek",
+      baseUrl: baseUrl ?? "https://api.deepseek.com",
+      reasoning: false,
+      input: ["text"] as const,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      contextWindow: 131072,
+      maxTokens: 8192,
+    } as unknown as Model<Api>
+  }
+
   // Standard pi-ai provider
   const model = getModel(
     provider as Parameters<typeof getModel>[0],

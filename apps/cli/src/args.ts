@@ -33,12 +33,37 @@ export interface CliArgs {
   rlmEnable: boolean
 }
 
+/**
+ * Auto-detect a sensible default provider from the API keys present in the
+ * environment, so a bare `ok-cli` works without flags when only e.g. OpenAI or
+ * DeepSeek keys are configured. Anthropic wins when multiple are present.
+ */
+function detectDefaultProvider(): string {
+  if (process.env.ANTHROPIC_API_KEY) return "anthropic"
+  if (process.env.OPENAI_API_KEY) return "openai"
+  if (process.env.DEEPSEEK_API_KEY) return "deepseek"
+  return "anthropic"
+}
+
+function defaultModelForProvider(provider: string): string {
+  switch (provider) {
+    case "openai":
+      return "gpt-4o"
+    case "deepseek":
+      return "deepseek-chat"
+    default:
+      return "claude-sonnet-4-6"
+  }
+}
+
 export function parseArgs(argv: string[]): CliArgs {
   const args: CliArgs = {
     subCommand: null,
     mode: "interactive",
-    model: process.env.OPENWORK_MODEL ?? "claude-sonnet-4-6",
-    provider: "anthropic",
+    // Sentinels — resolved below from env/flags so a bare `ok-cli` follows
+    // whatever key the user actually has configured.
+    model: "",
+    provider: "",
     version: false,
     help: false,
     verbose: false,
@@ -135,6 +160,13 @@ export function parseArgs(argv: string[]): CliArgs {
 
   if (positional.length > 0 && args.subCommand === null) {
     args.task = positional.join(" ")
+  }
+
+  // Fill gaps left by the sentinel defaults. Explicit -p/-m flags already
+  // overwrote the sentinel values above, so this only applies to bare runs.
+  if (!args.provider) args.provider = detectDefaultProvider()
+  if (!args.model) {
+    args.model = process.env.OPENWORK_MODEL ?? defaultModelForProvider(args.provider)
   }
 
   return args
