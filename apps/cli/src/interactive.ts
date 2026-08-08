@@ -162,9 +162,10 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   tui.addChild(history)
 
   // ── Startup banner (Claude Code style) ────────────────────────────────────
+  const okIcon = chalk.hex(M.green)("◉") // Green circle with dot
   const banner = [
     "",
-    chalk.hex(M.blue).bold("⚡ ok-cli") + chalk.hex(M.subtext)(` v${opts.version ?? "0.1.0"}`),
+    `${okIcon} ${chalk.hex(M.blue).bold("ok-cli")}${chalk.hex(M.subtext)(` v${opts.version ?? "0.1.0"}`)}`,
     chalk.hex(M.text)(`   ${opts.model}`) +
       chalk.hex(M.subtext)(` · ${opts.provider}`) +
       (opts.mcpServerCount ? chalk.hex(M.subtext)(` · ${opts.mcpServerCount} MCP`) : ""),
