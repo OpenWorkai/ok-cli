@@ -204,6 +204,30 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   editor.setAutocompleteProvider(new CombinedAutocompleteProvider(slashCmds, process.cwd()))
 
   tui.addChild(editor)
+
+  // ── Footer statusline ─────────────────────────────────────────────────────
+  const footer = new Container()
+  const renderFooter = () => {
+    const modeIcon = permissionMode === "allow-all" ? "⚡" : "🔒"
+    const modeText =
+      permissionMode === "allow-all"
+        ? chalk.hex(M.green)("bypass permissions on")
+        : permissionMode === "safe"
+          ? chalk.hex(M.red)("safe mode")
+          : chalk.hex(M.yellow)("ask mode")
+
+    const hints = [
+      `${modeIcon} ${modeText}`,
+      chalk.hex(M.subtext)("(shift+tab to cycle)"),
+      chalk.hex(M.subtext)("· /help for commands"),
+    ].join(" ")
+
+    footer.removeChildren()
+    footer.addChild(new Text(chalk.hex(M.overlay)(`  ${hints}`), 0, 0))
+  }
+  renderFooter()
+  tui.addChild(footer)
+
   tui.setFocus(editor)
 
   // ── State ─────────────────────────────────────────────────────────────────
@@ -370,6 +394,7 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
     const modeColor =
       mode === "safe" ? M.green : mode === "ask" ? M.yellow : M.subtext
     history.addChild(new Text(`  mode: ${chalk.hex(modeColor)(mode)}`, 1, 0))
+    renderFooter()
     tui.requestRender()
   }
 
