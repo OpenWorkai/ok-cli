@@ -91,6 +91,25 @@ function resolveModel(provider: string, modelId: string, baseUrl?: string): Mode
     } as unknown as Model<Api>
   }
 
+  if (provider === "openai" && baseUrl) {
+    // Generic OpenAI-compatible endpoint (e.g. DeepSeek, local vLLM, etc.).
+    // Build a spec directly so arbitrary endpoints work without being present
+    // in the model registry — otherwise getModel() returns undefined and the
+    // model ends up with api: undefined, which throws "No API provider registered".
+    return {
+      id: modelId,
+      name: modelId,
+      api: "openai-completions",
+      provider: "openai",
+      baseUrl,
+      reasoning: false,
+      input: ["text"] as const,
+      cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+      contextWindow: 128000,
+      maxTokens: 8192,
+    } as unknown as Model<Api>
+  }
+
   // Standard pi-ai provider
   const model = getModel(
     provider as Parameters<typeof getModel>[0],
