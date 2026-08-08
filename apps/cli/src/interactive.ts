@@ -165,7 +165,7 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   // Round speech bubble with black dot inside (green rounded outline, black center)
   const okIcon = [
     chalk.hex(M.green)(" ╭─╮ "),
-    chalk.hex(M.green)("│ ") + chalk.hex("#000000")("●") + chalk.hex(M.green)(" │"),
+    chalk.hex(M.green)("│ ") + chalk.hex("1e1e2e")("●") + chalk.hex(M.green)(" │"),
     chalk.hex(M.green)(" ╰─╯ "),
   ]
   const banner = [
