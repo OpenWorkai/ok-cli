@@ -161,6 +161,24 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   const history = new Container()
   tui.addChild(history)
 
+  // ── Startup banner (Claude Code style) ────────────────────────────────────
+  const banner = [
+    "",
+    chalk.hex(M.blue).bold("⚡ ok-cli") + chalk.hex(M.subtext)(` v${opts.version ?? "0.1.0"}`),
+    chalk.hex(M.text)(`   ${opts.model}`) +
+      chalk.hex(M.subtext)(` · ${opts.provider}`) +
+      (opts.mcpServerCount ? chalk.hex(M.subtext)(` · ${opts.mcpServerCount} MCP`) : ""),
+    chalk.hex(M.subtext)(`   ${process.cwd()}`),
+    "",
+  ].join("\n")
+  history.addChild(new Text(banner, 0, 0))
+
+  // MCP warning if servers need auth (TODO: detect auth failures)
+  if (opts.mcpServerCount && opts.mcpServerCount > 0) {
+    // Placeholder: in future detect auth status from MCP loader
+    // history.addChild(new Text(chalk.hex(M.yellow)(" ⚠ MCP servers loaded · run /mcp to check"), 1, 0))
+  }
+
   // Push editor toward the bottom on short sessions; scrolls away as history grows
   const initRows = process.stdout.rows ?? 24
   history.addChild(new Spacer(Math.max(0, initRows - 6)))
