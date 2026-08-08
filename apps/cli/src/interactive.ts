@@ -112,7 +112,7 @@ const mdTheme: MarkdownTheme = {
 }
 
 const editorTheme: EditorTheme = {
-  borderColor: (s) => chalk.hex(M.blue)(s),
+  borderColor: (s) => chalk.hex(M.peach)(s),
   selectList: {
     selectedPrefix: (s) => chalk.hex(M.blue)(s),
     selectedText: (s) => chalk.bold.hex(M.text)(s),
