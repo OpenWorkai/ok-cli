@@ -162,17 +162,17 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   tui.addChild(history)
 
   // ── Startup banner (Claude Code style) ────────────────────────────────────
-  // Speech bubble with black dot inside (green outline, black center)
+  // Round speech bubble with black dot inside (green rounded outline, black center)
   const okIcon = [
-    chalk.hex(M.green)("┌─┐"),
-    chalk.hex(M.green)("│") + chalk.hex("#000000")("●") + chalk.hex(M.green)("│"),
-    chalk.hex(M.green)("└─┘"),
+    chalk.hex(M.green)(" ╭─╮ "),
+    chalk.hex(M.green)("│ ") + chalk.hex("#000000")("●") + chalk.hex(M.green)(" │"),
+    chalk.hex(M.green)(" ╰─╯ "),
   ]
   const banner = [
     "",
-    `${okIcon[0]}   ${chalk.hex(M.blue).bold("ok-cli")}${chalk.hex(M.subtext)(` v${opts.version ?? "0.1.0"}`)}`,
-    `${okIcon[1]}   ${chalk.hex(M.text)(opts.model)}${chalk.hex(M.subtext)(` · ${opts.provider}`)}${opts.mcpServerCount ? chalk.hex(M.subtext)(` · ${opts.mcpServerCount} MCP`) : ""}`,
-    `${okIcon[2]}   ${chalk.hex(M.subtext)(process.cwd())}`,
+    `${okIcon[0]}  ${chalk.hex(M.blue).bold("ok-cli")}${chalk.hex(M.subtext)(` v${opts.version ?? "0.1.0"}`)}`,
+    `${okIcon[1]}  ${chalk.hex(M.text)(opts.model)}${chalk.hex(M.subtext)(` · ${opts.provider}`)}${opts.mcpServerCount ? chalk.hex(M.subtext)(` · ${opts.mcpServerCount} MCP`) : ""}`,
+    `${okIcon[2]}  ${chalk.hex(M.subtext)(process.cwd())}`,
     "",
   ].join("\n")
   history.addChild(new Text(banner, 0, 0))
