@@ -170,7 +170,7 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   ]
   const banner = [
     "",
-    `${okIcon[0]}  ${chalk.hex(M.blue).bold("ok-cli")}${chalk.hex(M.subtext)(` v${opts.version ?? "0.1.0"}`)}`,
+    `${okIcon[0]}  ${chalk.hex(M.peach).bold("ok-cli")}${chalk.hex(M.subtext)(` v${opts.version ?? "0.1.0"}`)}`,
     `${okIcon[1]}  ${chalk.hex(M.text)(opts.model)}${chalk.hex(M.subtext)(` · ${opts.provider}`)}${opts.mcpServerCount ? chalk.hex(M.subtext)(` · ${opts.mcpServerCount} MCP`) : ""}`,
     `${okIcon[2]}  ${chalk.hex(M.subtext)(process.cwd())}`,
     "",
