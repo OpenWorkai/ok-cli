@@ -163,10 +163,10 @@ export async function runInteractive(opts: InteractiveOptions): Promise<void> {
   tui.addChild(history)
 
   // ── Startup banner (Claude Code style) ────────────────────────────────────
-  // Round speech bubble with black dot inside (green rounded outline, black center)
+  // Round speech bubble with orange dot inside (green rounded outline, orange center)
   const okIcon = [
     chalk.hex(M.green)(" ╭─╮ "),
-    chalk.hex(M.green)("│ ") + chalk.hex("1e1e2e")("●") + chalk.hex(M.green)(" │"),
+    chalk.hex(M.green)("│ ") + chalk.hex(M.peach)("●") + chalk.hex(M.green)(" │"),
     chalk.hex(M.green)(" ╰─╯ "),
   ]
   const banner = [
